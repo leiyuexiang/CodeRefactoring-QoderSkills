@@ -1,0 +1,1 @@
+# maven-structure-skill（maven及工程目录skill）
