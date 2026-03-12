@@ -113,7 +113,10 @@ description: 为 Spring Boot + JDBCTemplate 项目自动生成系统测试代码
 
 | 层级 | 方法覆盖率目标 | 分支覆盖率目标 |
 |------|-------------|-------------|
+| Service 层 | 100% | ≥ 80% |
 | Controller 层 | 100% | ≥ 70% |
+| Mapper 层 | ≥ 80% | N/A |
+| Feign Fallback | 100% | N/A |
 
 ### 命名和注释规范
 
@@ -138,6 +141,7 @@ description: 为 Spring Boot + JDBCTemplate 项目自动生成系统测试代码
 - [ ] 所有 import 语句正确，无缺失依赖
 - [ ] 测试类包路径与源代码一致
 - [ ] Mock 注解正确（@Mock vs @MockBean 区分 Mockito 和 Spring 上下文）
+- [ ] 每个 Service 方法至少有 2 个测试用例（正常 + 异常/边界）
 - [ ] 每个 Controller 端点至少有 1 个完整的 MockMvc 测试
 - [ ] TestDataFactory 中的字段与实际实体类字段完全匹配
 - [ ] ReturnData 的断言使用正确的字段名（statusCode 而非 status_code，根据实际 JSON 序列化名）
