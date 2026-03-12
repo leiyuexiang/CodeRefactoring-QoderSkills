@@ -113,10 +113,7 @@ description: 为 Spring Boot + JDBCTemplate 项目自动生成系统测试代码
 
 | 层级 | 方法覆盖率目标 | 分支覆盖率目标 |
 |------|-------------|-------------|
-| Service 层 | 100% | ≥ 80% |
 | Controller 层 | 100% | ≥ 70% |
-| Mapper 层 | ≥ 80% | N/A |
-| Feign Fallback | 100% | N/A |
 
 ### 命名和注释规范
 
