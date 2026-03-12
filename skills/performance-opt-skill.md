@@ -235,18 +235,6 @@ CREATE INDEX idx_xxx ON table_name(column1, column2);
 {对于高频读取、变化不频繁的数据，建议使用本地缓存}
 
 **优化方案**：
-```java
-@Bean
-public CacheManager caffeineCacheManager() {
-    CaffeineCacheManager manager = new CaffeineCacheManager();
-    manager.setCaffeine(Caffeine.newBuilder()
-        .initialCapacity(100)
-        .maximumSize(1000)
-        .expireAfterWrite(10, TimeUnit.MINUTES)
-        .recordStats());
-    return manager;
-}
-```
 
 **适用场景**：{字典数据 / 配置数据 / 组织机构树 等}
 
@@ -282,22 +270,6 @@ spring:
 
 **当前问题**：{未配置线程池 / 参数不合理 / 缺少拒绝策略}
 
-**优化方案**：
-```java
-@Bean("taskExecutor")
-public ThreadPoolTaskExecutor taskExecutor() {
-    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize({CPU核数 + 1，IO密集型为 CPU核数 * 2});
-    executor.setMaxPoolSize({推荐值});
-    executor.setQueueCapacity({推荐值});
-    executor.setKeepAliveSeconds(60);
-    executor.setThreadNamePrefix("{业务名}-");
-    executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-    executor.setWaitForTasksToCompleteOnShutdown(true);
-    executor.setAwaitTerminationSeconds(30);
-    return executor;
-}
-```
 
 **参数说明**：
 - CPU 密集型：corePoolSize = CPU核数 + 1
