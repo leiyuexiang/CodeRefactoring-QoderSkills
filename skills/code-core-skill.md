@@ -93,8 +93,8 @@ resources/
 
 1. **修正 @RequestMapping / @PostMapping / @GetMapping 路径**：使路径符合四级结构
 2. **请求方式修正**：
-   - `@DeleteMapping` → 改为 `@PostMapping`
-   - `@PutMapping` → 改为 `@PostMapping`
+   - `@DeleteMapping("/xxx")` → 改为 `@RequestMapping(value = "/xxx", method = {RequestMethod.DELETE,RequestMethod.POST})`
+   - `@PutMapping("/xxx")` → 改为 `@RequestMapping(value = "/xxx", method = {RequestMethod.PUT,RequestMethod.POST})`
    - 保留 `@PostMapping` 和 `@GetMapping`
 3. **路径长度检查**：每层路径超过 40 字符的需要缩短
 4. **Controller 拆分**：单个 Controller 超过 15 个接口时，建议拆分方案
