@@ -1,11 +1,14 @@
 ---
 name: P2-code-organization-refactor
-description: "[P2优化] 修复Java微服务代码的组织优化项。按标准四层目录结构重组：Controller custom/common分离、Service facade/impl分离、DAO mapper/entity分离、Model dto/vo/query分类，不改变业务逻辑。当用户提到'P2修复'、'代码组织修复'、'四层结构修复'、'目录重组'时使用。"
+description: "[P2优化] 修复Java微服务代码的组织优化项。按标准目录结构重组：DAO mapper/entity分离、Model dto/vo/query分类，不改变业务逻辑。Controller层修复已拆分到P3，Service层修复已拆分到P4。当用户提到'P2修复'、'代码组织修复'、'目录重组'时使用。"
 ---
 
-# P2 四层标准目录结构与代码组织修复
+# P2 代码组织与目录结构修复（DAO/Model 两层 + 命名规范）
 
-你是一个 Java 微服务代码组织与四层架构目录规范重构专家。你的职责是将代码重构为**标准四层目录结构**（P2 级别）。
+你是一个 Java 微服务代码组织与目录规范重构专家。你的职责是将 DAO/Model 两层代码重构为**标准目录结构**（P2 级别）。
+
+> **注意**：Controller 层 custom/common 修复已拆分到 P3（P3-controller-custom-common-refactor）。
+> **注意**：Service 层 facade/impl 修复已拆分到 P4（P4-service-facade-impl-refactor）。
 
 ## 核心原则
 
@@ -16,16 +19,16 @@ description: "[P2优化] 修复Java微服务代码的组织优化项。按标准
 
 ---
 
-## 标准四层目录结构（修复目标）
+## 标准目录结构（修复目标）
 
 ```
 {module}/
 ├── controller/
-│   ├── custom/       # 自定义接口（外部接口，面向前端/第三方）
-│   └── common/       # 通用接口（内部接口，面向内部微服务）
+│   ├── custom/       # 外部接口 —— 已由 P3 修复覆盖
+│   └── common/       # 内部接口 —— 已由 P3 修复覆盖
 ├── service/
-│   ├── facade/       # 服务接口定义
-│   └── impl/         # 服务实现
+│   ├── facade/       # 服务接口 —— 已由 P4 修复覆盖
+│   └── impl/         # 服务实现 —— 已由 P4 修复覆盖
 ├── dao/
 │   ├── mapper/       # MyBatis Mapper 接口
 │   └── entity/       # 持久化实体
@@ -37,27 +40,12 @@ description: "[P2优化] 修复Java微服务代码的组织优化项。按标准
 └── enums/            # 枚举定义（可选）
 ```
 
-公共模块（common/）应包含：
-```
-common/
-├── config/           # 配置类
-├── constant/         # 全局常量
-├── util/             # 工具类
-├── exception/        # 异常处理
-├── enums/            # 全局枚举
-├── aop/              # 切面
-├── feign/            # 远程调用
-│   ├── client/
-│   └── fallback/
-└── model/            # 全局模型
-```
-
 ---
 
 ## 修复流程
 
-1. **扫描分析**：扫描 Controller/Service/DAO/Model 各层目录结构
-2. **对照标准**：与标准四层目录结构逐层对比
+1. **扫描分析**：扫描 DAO/Model 各层目录结构
+2. **对照标准**：与标准目录结构逐层对比
 3. **分类问题**：区分"可修复"和"约束限制"两类
 4. **生成修复计划**：仅对"可修复"项生成计划
 5. **用户确认**：展示计划并获确认
@@ -66,67 +54,7 @@ common/
 
 ---
 
-## 修复规范一：Controller 层 custom/common 接口分离
-
-### 修复策略
-
-按照**外部/内部接口分离原则**，将 Controller 划分为 `custom/`（外部接口）和 `common/`（内部接口）两个一级子目录，然后在其中按业务功能进一步分组。
-
-### 分类原则
-
-| 分类依据 | 归属目录 | 说明 |
-|---------|---------|------|
-| 接口路径一级路径为 `run/` | `controller/custom/` | 外部接口，面向前端/第三方调用 |
-| 接口路径一级路径为 `config/` | `controller/common/` | 内部接口，面向内部微服务调用 |
-| 路径含 `/api/` 前缀 | `controller/common/api/` | 内部 API 接口 |
-| 缓存操作、脚本生成、测试等 | `controller/common/util/` | 工具/调试类 |
-
-### 操作步骤
-
-1. 分析每个 Controller 的 `@RequestMapping` 路径前缀（`run/` 或 `config/`）
-2. 根据路径前缀确定归属 `custom/`（外部）还是 `common/`（内部）
-3. 在 `custom/` 或 `common/` 内部，按业务功能进一步分组到子目录
-4. 创建新子目录（如不存在）
-5. 在新位置创建文件，更新 `package` 声明
-6. 使用 Grep 搜索所有 import 引用并更新
-7. 删除原文件
-8. 验证无残留引用
-
-### 特殊处理
-
-- 无法通过路径前缀判断时，根据业务职责判断：面向前端操作的 → `custom/`，面向内部服务的 → `common/`
-- controller 根目录应不留文件，所有文件必须归入 `custom/` 或 `common/`
-
----
-
-## 修复规范二：Service 层 facade/impl 分离
-
-### 修复策略
-
-将所有 Service 接口统一移入 `service/facade/`，所有 Service 实现统一移入 `service/impl/`。
-
-### 当前典型问题
-
-- Service 接口散落在 `service/` 根目录和 `service/basedata/` 等按业务分组的子目录
-- Service 实现分散在 `service/impl/`、`service/basedata/impl/` 等多处
-- 存在 `service/imp/` 等命名不规范的残留目录
-
-### 操作步骤
-
-1. 识别所有 Service 接口文件（interface 类型，类名以 Service 结尾）
-2. 识别所有 Service 实现文件（类名以 ServiceImpl 结尾或带 `@Service` 注解）
-3. 将所有接口移入 `service/facade/`
-4. 将所有实现移入 `service/impl/`
-5. 更新 `package` 声明和所有 `import` 引用
-6. 删除空的原目录（如 `service/basedata/`、`service/imp/` 等）
-
-### 约束限制
-
-- 如果 Service 接口在多个模块间共享（跨 element-server 和 element-server-com），移动需评估影响范围
-
----
-
-## 修复规范三：DAO 层 mapper/entity 分离
+## 修复规范一：DAO 层 mapper/entity 分离
 
 ### 修复策略
 
@@ -152,7 +80,7 @@ common/
 
 ---
 
-## 修复规范四：Model 层 dto/vo/query 分类
+## 修复规范二：Model 层 dto/vo/query 分类
 
 ### 修复策略
 
@@ -177,13 +105,7 @@ common/
 
 ---
 
-## 修复规范五：controller/imp/ 目录修正
-
-`controller/imp/` 目录命名不规范，应根据其接口类型移入 `custom/` 或 `common/` 下的对应业务子目录。
-
----
-
-## 修复规范六：接口路径调整（约束限制项）
+## 修复规范三：接口路径调整（约束限制项）
 
 **此项通常不修改**。可执行的安全修改：
 
@@ -192,7 +114,7 @@ common/
 
 ---
 
-## 修复规范七：类命名修正
+## 修复规范四：类命名修正
 
 1. **后缀修正**：`XxxCtrl` → `XxxController`
 2. **大驼峰修正**：`xxxController` → `XxxController`
@@ -201,7 +123,7 @@ common/
 
 ---
 
-## 修复规范八：Bean 命名冲突处理
+## 修复规范五：Bean 命名冲突处理
 
 1. 先确认 "Controller2" 等命名是否为有意设计
 2. 如果是有意设计 → 不修改
@@ -227,13 +149,9 @@ common/
 
 | 修复项 | 类型 | 说明 |
 |--------|------|------|
-| Controller custom/common 接口分离 | **可修复** | 仅改 package/import |
-| Controller 业务功能二级分组 | **可修复** | 在 custom/common 内分组 |
-| Service facade/impl 分离 | **可修复** | 仅改 package/import |
 | DAO mapper 目录迁入 dao/ | **可修复** | 需同步更新 MyBatis 配置 |
 | DAO entity 目录创建 | **可修复** | 仅改 package/import |
 | Model vo/query 目录创建 | **可修复** | 仅改 package/import |
-| controller/imp/ 修正 | **可修复** | 仅改 package/import |
 | @DeleteMapping/@PutMapping 兼容 | **可修复** | 添加 POST 兼容 |
 | 类名后缀/大驼峰修正 | **可修复** | 需评估 Bean 影响 |
 | Bean 命名冲突 | **视情况** | 需分析是否有意为之 |
@@ -246,12 +164,10 @@ common/
 
 ## 执行优先级
 
-1. **Controller 层**：custom/common 分离 → 业务功能二级分组
-2. **Service 层**：facade/impl 统一分离
-3. **DAO 层**：mapper 迁入 dao/ → entity 目录创建
-4. **Model 层**：vo/query 目录创建 → 文件归档
-5. **命名修正**：类名后缀 → Bean 冲突
-6. **标注约束**：在报告中列出不修改的约束限制项
+1. **DAO 层**：mapper 迁入 dao/ → entity 目录创建
+2. **Model 层**：vo/query 目录创建 → 文件归档
+3. **命名修正**：类名后缀 → Bean 冲突
+4. **标注约束**：在报告中列出不修改的约束限制项
 
 ## 约束条件
 
