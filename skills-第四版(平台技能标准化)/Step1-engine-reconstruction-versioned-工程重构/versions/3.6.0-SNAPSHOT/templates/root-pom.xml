@@ -1,0 +1,23 @@
+<!-- 根 POM modules 模板 -->
+<!-- 使用说明：将 {module} 替换为实际业务模块名，按需增减 module 条目 -->
+<modules>
+    <module>grp-common-boot</module>
+    <module>{module1}-module</module>
+    <module>{module2}-module</module>
+    <!-- 按需添加更多业务模块 -->
+</modules>
+
+<!--
+示例（具体工程填充后）：
+<modules>
+    <module>grp-common-boot</module>
+    <module>element-module</module>
+    <module>framework-module</module>
+    <module>engine-module</module>
+    <module>workflow-module</module>
+    <module>frs-module</module>
+    <module>gateway-module</module>
+    <module>oauth2-module</module>
+    <module>framework-web-module</module>
+</modules>
+-->

@@ -1,0 +1,20 @@
+<!-- 模块级底座层容器 POM 模板 (grp-common-{module}) -->
+<!-- 使用说明：将 {groupId}、{module-artifactId}、{version}、{module} 替换为实际值 -->
+<!-- 注意：此模板用于 {module}-module/ 下的底座层，不是全局底座层 grp-common-boot -->
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>{groupId}</groupId>
+        <artifactId>{module}-module</artifactId>
+        <version>{version}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>grp-common-{module}</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <!-- 按需添加模块级底座子模块 -->
+    </modules>
+</project>

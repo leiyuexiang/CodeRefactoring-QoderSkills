@@ -1,0 +1,20 @@
+<!-- 聚合层容器 POM 模板 -->
+<!-- 使用说明：将 {groupId}、{version}、{module} 替换为实际值 -->
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>{groupId}</groupId>
+        <artifactId>{module}-module</artifactId>
+        <version>{version}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>grp-aggregation-{module}</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>{module}-server-springcloud</module>
+        <!-- 按需添加其他适配模块 -->
+    </modules>
+</project>

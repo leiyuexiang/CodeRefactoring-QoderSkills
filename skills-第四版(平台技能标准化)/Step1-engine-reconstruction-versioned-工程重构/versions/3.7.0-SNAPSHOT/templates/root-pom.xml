@@ -1,0 +1,8 @@
+<!-- 根 POM modules 模板 - 3.7.0-SNAPSHOT -->
+<!-- TODO: 如有差异请修改 -->
+<modules>
+    <module>grp-common-boot</module>
+    <module>{module1}-module</module>
+    <module>{module2}-module</module>
+    <!-- 按需添加更多业务模块 -->
+</modules>

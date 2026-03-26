@@ -1,0 +1,22 @@
+<!-- 底座层容器 POM 模板 - 3.7.0-SNAPSHOT -->
+<!-- TODO: 如有差异请修改 -->
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>{groupId}</groupId>
+        <artifactId>{root-artifactId}</artifactId>
+        <version>{version}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>grp-common-boot</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>grp-logger-com</module>
+        <module>grp-exception-com</module>
+        <module>grp-util-com</module>
+        <module>grp-database-com</module>
+    </modules>
+</project>

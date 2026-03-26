@@ -1,0 +1,90 @@
+<!-- 自包含根POM模板 (standalone-root-pom.xml) -->
+<!-- 使用说明：
+     1. 将 {project-name} 替换为实际项目名称
+     2. 将 {groupId} 替换为实际 groupId
+     3. 将 {version} 替换为工程版本
+     4. 将 {modules} 替换为实际 module 列表
+     5. 将 {dependencyManagement-items} 替换为扫描生成的依赖管理条目
+     6. Spring Boot 版本、Spring Cloud 版本根据实际环境调整
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 使用 Spring Boot 父依赖，使项目可独立编译运行 -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.3.12.RELEASE</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>{groupId}</groupId>
+    <artifactId>{project-name}-parent</artifactId>
+    <version>{version}</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <!-- {modules} -->
+    </modules>
+
+    <properties>
+        <grp-pt.version>{version}</grp-pt.version>
+        <spring-cloud.version>Hoxton.SR12</spring-cloud.version>
+        <spring-cloud-alibaba.version>2.2.7.RELEASE</spring-cloud-alibaba.version>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+    </properties>
+
+    <!-- 依赖版本统一管理 -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud BOM -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud Alibaba BOM -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- ======== 内部模块（本项目 reactor 内） ======== -->
+            <!-- 自动扫描生成：本项目中所有叶子模块的 artifactId -->
+            <!-- {reactor-module-dependencies} -->
+
+            <!-- ======== 平台内部组件（外部仓库） ======== -->
+            <!-- 自动扫描生成：groupId=grp.pt 但不在 reactor 内的依赖 -->
+            <!-- {platform-component-dependencies} -->
+
+            <!-- ======== 第三方依赖（非 Spring Boot/Cloud 管理） ======== -->
+            <!-- 自动扫描生成：有显式版本号且不被 BOM 管理的第三方依赖 -->
+            <!-- {third-party-dependencies} -->
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- 配置私服仓库 -->
+    <repositories>
+        <repository>
+            <id>nexus</id>
+            <name>nexus</name>
+            <url>http://nexus.ctjsoft.com:8081/nexus/content/groups/public/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+</project>
