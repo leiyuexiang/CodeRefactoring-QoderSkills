@@ -23,6 +23,14 @@
 | S-06 | **保持方法签名** | 被迁移到 Service 层的方法，签名应尽量保持一致 |
 | S-07 | **接口签名一致性** | 新建 Service 接口的方法签名必须与 ServiceImpl 中的 public 方法完全一致（返回类型、方法名、参数列表、throws），禁止新增、合并、拆分方法 |
 | S-08 | **禁止 SQL 逻辑移动** | 不得将 DAO/Mapper 层的 SQL 调用逻辑上移到 Service 接口层，接口仅作为调用转发层 |
+| S-09 | **禁止迁移 Controller 的 private 方法** | Controller 中的 private 方法必须保留在原位，不得整体迁移到 Service 层；private 方法内部的 DAO 调用改为通过 DelegateService 接口转发 |
+| S-10 | **S1-03 接口方法范围最小化** | 为 ServiceImpl 提取接口时，仅提取 Controller 中**实际调用**的 ServiceImpl 方法，禁止提取 Controller 未调用但 ServiceImpl 中存在的方法 |
+| S-11 | **S1-03 修复范围全覆盖** | 所有匹配的 ServiceImpl 注入都必须修复，不允许选择性跳过（唯一例外：字段存在但 Controller 未调用任何方法） |
+| S-12 | **多 DAO 强制合并** | 同一 Controller 注入的多个 DAO 必须合并到同一个 DelegateService，禁止拆分为多个独立 Service |
+| S-13 | **新建文件放 Service 层模块** | DelegateService 接口和实现类必须放在 Service 层模块（`{module}-server-com`/`{module}-service`）中，禁止放在 Controller 层模块 |
+| S-14 | **字段命名确定性** | 替换注入类型后，字段名必须按接口设计规范 D-09 的确定性规则命名，禁止保留原字段名或自由命名 |
+| S-15 | **违规编号确定性** | 同一违规必须始终判定为相同的 S1 编号，按被注入类的类型特征判定，不按场景判定 |
+| S-16 | **注释格式标准化** | 新建接口的 JavaDoc 注释必须按 D-05 标准化格式生成，禁止两次执行时采用不同的注释详细程度 |
 
 ## 允许修改的范围
 

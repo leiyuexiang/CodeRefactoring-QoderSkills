@@ -133,6 +133,13 @@ Service 接口/实现模板 → [templates/](templates/) 目录
 - **不修改** HTTP 接口的 URL、HTTP 方法、入参、出参
 - **不修改** Entity 类的包名和类名
 - **不修改** 任何业务逻辑的执行结果
+- **禁止迁移** Controller 的 private 方法到 Service 层（S-09）
+- **S1-03 接口方法范围最小化**：仅提取 Controller 实际调用的方法（S-10）
+- **S1-03 修复范围全覆盖**：所有匹配的 ServiceImpl 注入都必须修复，不允许选择性跳过
+- **多 DAO 强制合并**：同一 Controller 的多个 DAO 必须合并到一个 DelegateService（D-04-A）
+- **新建文件放 Service 层模块**：DelegateService 必须放在 `{module}-server-com`/`{module}-service` 中（D-08）
+- **字段命名确定性**：替换后字段名按确定性规则命名（D-09）
+- **违规编号确定性**：同一违规必须始终判定为相同 S1 编号（按类型特征判定，非场景判定）
 - 务必在重构前获得用户确认
 
 ### 修复执行说明
@@ -168,6 +175,6 @@ Service 接口/实现模板 → [templates/](templates/) 目录
 |------|------|
 | [scripts/check-rules.md](scripts/check-rules.md) | S1 检查规则清单（5 项详细检查方法与判定标准） |
 | [scripts/refactor-rules.md](scripts/refactor-rules.md) | S1 修复规范（4 大修复策略 + AI 标记规范 + 接口设计引用） |
-| [scripts/safety-constraints.md](scripts/safety-constraints.md) | 修复安全约束与核心原则（S-01 ~ S-08） |
+| [scripts/safety-constraints.md](scripts/safety-constraints.md) | 修复安全约束与核心原则（S-01 ~ S-10） |
 | [scripts/interface-design-rules.md](scripts/interface-design-rules.md) | 接口设计规范（直接代理原则，D-01 ~ D-07） |
 | [scripts/completeness-check.md](scripts/completeness-check.md) | 完整性校验清单（V-01 ~ V-06，确保修复无遗漏） |

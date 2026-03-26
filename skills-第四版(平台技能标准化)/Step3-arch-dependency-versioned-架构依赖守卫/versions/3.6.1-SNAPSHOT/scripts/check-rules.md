@@ -2,9 +2,18 @@
 
 > 基于 3.6.0-SNAPSHOT 基线版本。**TODO**: 请在此补充 3.6.1 版本的规则差异。
 
+> **重要：** 所有检查规则属与 3.6.0-SNAPSHOT 一致的部分，**必须执行 3.6.0-SNAPSHOT 基线版本中强制全量扫描指令**（包括 S1-01/S1-02/S1-03 的三条 Grep 扫描）。
+
 ## S1-01：Controller→Controller 直接依赖
 
 **违规模式**：Controller 类通过 `@Autowired` 或 `@Resource` 注入了另一个 Controller。
+
+**强制全量扫描**（必须先于单文件分析执行，将扫描结果完整列出）：
+```
+Grep pattern: import.*\.controller\.[A-Z][a-zA-Z]*Controller
+Grep path: {controller-module-src-path}
+Grep flags: -l
+```
 
 **判定标准**：
 - Controller 类中存在 `import xxx.controller.XxxController` → **FAIL**

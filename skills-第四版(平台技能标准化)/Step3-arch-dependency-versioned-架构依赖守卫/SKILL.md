@@ -112,7 +112,7 @@ S1-arch-dependency-versioned-架构依赖守卫/
     │   └── scripts/                  # 检查/修复规则脚本
     │       ├── check-rules.md            # S1 检查规则
     │       ├── refactor-rules.md         # 修复规范（含决策树+AI标记规范）
-    │       ├── safety-constraints.md     # 安全约束（S-01~S-08）
+    │       ├── safety-constraints.md     # 安全约束（S-01~S-10）
     │       ├── interface-design-rules.md # 接口设计规范（D-01~D-07）
     │       └── completeness-check.md     # 完整性校验清单（V-01~V-06）
     ├── 3.6.1-SNAPSHOT/               # 增量修订版本

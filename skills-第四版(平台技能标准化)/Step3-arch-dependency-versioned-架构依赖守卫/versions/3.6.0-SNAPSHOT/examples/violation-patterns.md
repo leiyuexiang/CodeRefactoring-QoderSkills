@@ -16,7 +16,7 @@ public class AController {
 }
 ```
 
-### 修复后（策略 A：调用下沉到 Service 层）
+### 修复后（策略 A：替换为 Service 接口注入，最小改动）
 
 ```java
 @RestController
@@ -60,31 +60,34 @@ public class XxxController {
 ### 修复后
 
 ```java
-// 1. 新建 Service 接口
-public interface IXxxService {
-    ReturnType doOperation(ParamType param);
+// 1. 新建 DelegateService 接口（方法签名与 DAO 原方法一致）
+public interface IXxxDelegateService {
+    /**
+     * 查询数据
+     */
+    ReturnType query(ParamType param);
 }
 
-// 2. 新建 ServiceImpl
+// 2. 新建 DelegateServiceImpl（纯转发，不含业务逻辑）
 @Service
-public class XxxServiceImpl implements IXxxService {
+public class XxxDelegateServiceImpl implements IXxxDelegateService {
     @Autowired
     private XxxDao xxxDao;
 
     @Override
-    public ReturnType doOperation(ParamType param) {
-        return xxxDao.query(param);  // 原 Controller 中的 DAO 调用逻辑移到这里
+    public ReturnType query(ParamType param) {
+        return xxxDao.query(param);  // 纯转发，方法名和参数不变
     }
 }
 
-// 3. 修改 Controller
+// 3. 修改 Controller（注入 DelegateService 接口，调用方法名不变）
 @RestController
 public class XxxController {
     @Autowired
-    private IXxxService xxxService;  // 改为注入 Service 接口
+    private IXxxDelegateService xxxDelegateService;  // 改为注入 DelegateService 接口
 
     public ReturnData method() {
-        return xxxService.doOperation(param);
+        return xxxDelegateService.query(param);  // 方法名与 DAO 原方法一致
     }
 }
 ```

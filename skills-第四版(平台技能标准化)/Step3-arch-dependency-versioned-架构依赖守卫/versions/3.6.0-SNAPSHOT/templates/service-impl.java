@@ -1,39 +1,42 @@
-// ServiceImpl 实现类模板
-// 使用说明：补建 Service 中间层时，按此模板创建 Service 实现类
-// 将 {ServiceName}、{ReturnType}、{MethodName}、{DaoName} 等替换为实际值
+// ServiceImpl 实现类模板（补建 S1-02 DAO 委托服务用）
+//
+// ===== 模板变量表（必须严格按此填充） =====
+// {DaoClassName}    = 被替换的 DAO 类名（如 UserDao）
+// {DaoPrefix}       = DAO 类名去掉 Dao/DAO 后缀（如 User）
+// {DaoPackageBase}  = DAO 所在的业务域包（如 grp.pt.frame.config.user）
+// {daoFieldName}    = DAO 字段名（如 userDao）
+// 实现类名         = {DaoPrefix}DelegateServiceImpl（如 UserDelegateServiceImpl）
+// 实现类包路径     = {DaoPackageBase}.service.impl
 //
 // ===== 关键规则 =====
-// 1. 类必须声明 implements I{ServiceName}Service
+// 1. 类必须声明 implements I{DaoPrefix}DelegateService
 // 2. 每个接口方法实现前必须标注 @Override（强制，不可省略）
-// 3. 已有 ServiceImpl 补加 implements 时：
-//    a. 仅在类声明上追加 implements I{ServiceName}Service
+// 3. 方法体必须为纯转发：直接调用 DAO 的同名方法（FCC 指令）
+// 4. 禁止在方法体中添加任何业务逻辑、类型转换、异常处理等额外代码
+// 5. 已有 ServiceImpl 补加 implements 时：
+//    a. 仅在类声明上追加 implements I{DaoPrefix}DelegateService
 //    b. 已有的 public 方法前补加 @Override 注解
 //    c. 不得修改方法内部逻辑
 
-package {basePackage}.service.impl;
+package {DaoPackageBase}.service.impl;
 
-import {basePackage}.service.I{ServiceName}Service;
-import {basePackage}.dao.{DaoName};
+import {DaoPackageBase}.service.I{DaoPrefix}DelegateService;
+import {DaoPackageBase}.dao.{DaoClassName};
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * {ServiceName} 服务实现类。
- *
- * @see I{ServiceName}Service
+ * {DaoPrefix} 代理服务实现类
+ * 合并 {DaoClassName} 的调用，为 Controller 层提供数据访问，修复 S1-02 违规
  */
 @Service
-public class {ServiceName}ServiceImpl implements I{ServiceName}Service {
+public class {DaoPrefix}DelegateServiceImpl implements I{DaoPrefix}DelegateService {
 
     @Autowired
-    private {DaoName} {daoFieldName};
+    private {DaoClassName} {daoFieldName};
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public {ReturnType} {methodName}({ParamType} {paramName}) {
-        // 从 Controller 中迁移过来的 DAO 调用逻辑
-        return {daoFieldName}.{daoMethod}({paramName});
+        return {daoFieldName}.{methodName}({paramName});
     }
 }

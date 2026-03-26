@@ -19,19 +19,13 @@ package {basePackage}.service;
 import {需要的类型};
 
 /**
- * {ServiceName} 服务接口。
- * <p>提供 {功能简述}。</p>
- *
- * @see {basePackage}.service.impl.{ServiceName}ServiceImpl
+ * {ServiceName} 服务接口
+ * 提供 {功能简述}
  */
 public interface I{ServiceName}Service {
 
     /**
-     * {方法说明}。
-     *
-     * @param {paramName} {参数说明}
-     * @return {返回值说明}
-     * @throws {ExceptionType} {异常说明}（如有）
+     * {D-05-C注释模板对应的中文功能说明}
      */
     {ReturnType} {methodName}({ParamType} {paramName}) throws {ExceptionType};
 }
