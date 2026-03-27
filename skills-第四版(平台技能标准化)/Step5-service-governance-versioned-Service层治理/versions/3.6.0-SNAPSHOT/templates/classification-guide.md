@@ -32,11 +32,15 @@ Service 目录下的 Java 文件
 
 ### Service 实现判定
 
-| 条件 | 判定 | 目标目录 |
-|------|------|---------|
-| `class` + 类名以 `ServiceImpl` 结尾 | Service 实现 | `service/impl/` |
-| `class` + `@Service` 注解 + `implements I*Service` | Service 实现 | `service/impl/` |
-| `class` + `@Service` 注解 + 无 Service 接口 | 需分析 | 可能保留原位 |
+| 条件 | 判定 | 目标目录 | 备注 |
+|------|------|---------|------|
+| class + 类名以 ServiceImpl 结尾 | Service 实现 | service/impl/ | - |
+| class + @Service 注解 + implements I*Service | Service 实现 | service/impl/ | - |
+| class + @Service 注解 + 无 Service 接口 | **保留原位** | 不迁移 | 在报告中标注 |
+| class + 类名以 Service 结尾（非 ServiceImpl） + 无 @Service | **保留原位** | 不迁移 | 在报告中标注 |
+| class + 类名以 Service 结尾（非 ServiceImpl） + 有 @Service | Service 实现 | service/impl/ | 在报告中标注建议改名 |
+
+**规则优先级**：按上表从上到下匹配，命中第一条即停止。不允许"综合分析判断"。
 
 ### 非 Service 文件判定
 
