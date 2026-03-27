@@ -1,9 +1,11 @@
 ﻿# S4 custom/common 标准目录结构模板 - 3.6.1-SNAPSHOT
 
-> **TODO**: 本文件继承自 3.6.0-SNAPSHOT 基线版本。如果 3.6.1-SNAPSHOT 版本的标准目录结构有变更，请在此更新。
+## 与 3.6.0-SNAPSHOT 的差异
+
+本版本标准目录结构与 3.6.0-SNAPSHOT 基线完全一致，无差异。
 
 ## 标准目录结构
 
-本版本标准目录结构与 3.6.0-SNAPSHOT 基线版本一致。
+本版本采用集中重构策略，common/ 下封闭式子目录列表（api、sso、monitor），custom/ 下由 extractBusinessGroup 确定性命名。
 
-> 完整目录结构模板请参考 3.6.0-SNAPSHOT 版本的 [standard-directory.md](../../3.6.0-SNAPSHOT/templates/standard-directory.md)，如本版本有差异则以本文件为准。
+> 完整目录结构模板请参考 3.6.0-SNAPSHOT 版本的 [standard-directory.md](../../3.6.0-SNAPSHOT/templates/standard-directory.md)。

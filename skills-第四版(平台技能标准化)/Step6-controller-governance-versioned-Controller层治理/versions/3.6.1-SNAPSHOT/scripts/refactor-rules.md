@@ -1,16 +1,11 @@
 ﻿# S4 修复规范 - 3.6.1-SNAPSHOT
 
-> **TODO**: 本文件继承自 3.6.0-SNAPSHOT 基线版本。请在此补充 3.6.1-SNAPSHOT 版本特有的修复规范差异。
-
 ## 与 3.6.0-SNAPSHOT 的差异
 
-> **TODO**: 请在此列出相比基线版本的修复规范变更：
-> - 新增规范：无 / [待补充]
-> - 调整规范：无 / [待补充]
-> - 删除规范：无 / [待补充]
+本版本修复规范与 3.6.0-SNAPSHOT 基线完全一致，无差异。
 
 ## 修复规范
 
-本版本修复规范与 3.6.0-SNAPSHOT 基线版本一致（规范一至规范五），如有差异请在上方补充。
+本版本采用统一迁移公式（5 阶段总流程 + 9 步标准迁移流程），与 3.6.0-SNAPSHOT 基线一致。
 
-> 完整修复规范请参考 3.6.0-SNAPSHOT 版本的 [refactor-rules.md](../../3.6.0-SNAPSHOT/scripts/refactor-rules.md)，如本版本有差异则以本文件为准。
+> 完整修复规范请参考 3.6.0-SNAPSHOT 版本的 [refactor-rules.md](../../3.6.0-SNAPSHOT/scripts/refactor-rules.md)。

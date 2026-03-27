@@ -1,9 +1,11 @@
-﻿# 外部/内部接口分类判断指南 - 3.7.0-SNAPSHOT
+﻿# 三级确定性分类指南 - 3.7.0-SNAPSHOT
 
-> **TODO**: 本文件继承自 3.6.0-SNAPSHOT 基线版本。如果 3.7.0-SNAPSHOT 版本的分类判断标准有变更，请在此更新。
+## 与 3.6.x 系列的差异
 
-## 分类判断标准
+本版本分类判断标准与 3.6.0-SNAPSHOT 基线完全一致，无差异。
 
-本版本分类判断标准与 3.6.0-SNAPSHOT 基线版本一致。
+## 分类机制
 
-> 完整分类判断指南请参考 3.6.0-SNAPSHOT 版本的 [classification-guide.md](../../3.6.0-SNAPSHOT/templates/classification-guide.md)，如本版本有差异则以本文件为准。
+本版本采用三级确定性分类链（Level 1 精确映射 → Level 2 关键词匹配 → Level 3 默认 custom），含 Gate Check（注解门控）和包路径转换公式。
+
+> 完整分类判断指南请参考 3.6.0-SNAPSHOT 版本的 [classification-guide.md](../../3.6.0-SNAPSHOT/templates/classification-guide.md)。
