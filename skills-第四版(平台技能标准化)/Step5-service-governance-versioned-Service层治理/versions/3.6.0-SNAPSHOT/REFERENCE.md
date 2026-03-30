@@ -51,6 +51,20 @@ service/
     └── ...
 ```
 
+## 强制执行规范（不可违反）
+
+### 目标目录路径构造公式
+
+- Service 接口目标路径 = `{原service包路径}/facade/{接口文件名}`
+- Service 实现目标路径 = `{原service包路径}/impl/{实现文件名}`
+
+**绝对规则**：
+1. 所有 Service 接口必须且只能放入 `service/facade/` 目录，不允许保留在 service 根目录
+2. 所有 Service 实现必须且只能放入 `service/impl/` 目录
+3. 如果源工程存在 `serviceImp/`、`imp/`、`svc/` 等非标准命名的目录，必须统一重命名/迁移到 `impl/`
+4. 禁止复用源工程已有的非标准目录名称
+5. facade/ 和 impl/ 是唯一合法的 Service 子目录名称
+
 ## 检查项总览
 
 | 编号 | 检查项 | 严重级别 | 说明 |
@@ -138,11 +152,26 @@ service/
 
 ### Phase 5: 验证结果
 
-修复完成后验证无残留引用：
-- Glob 扫描确认 `service/` 下接口已全部归入 `facade/`
-- 确认所有实现已统一在 `service/impl/` 下
-- Grep 搜索旧 package 路径确认无残留引用
+修复完成后执行以下强制验证，任何一项不通过必须立即停止并报告：
+
+#### 1. 目录结构验证
+- Glob 扫描确认所有 service/facade/ 下只有 interface 文件（即 Service 接口已全部归入 facade/）
+- Glob 扫描确认所有 service/impl/ 下只有 class 文件（即所有实现已统一在 impl/ 下）
+- 确认不存在 Service 接口文件残留在 service/ 根目录或其他非 facade/ 子目录
+
+#### 2. 引用完整性验证
+- Grep 搜索所有旧 package 路径，确认零结果
+- Grep 搜索所有旧 import 路径，确认零结果
 - 确认修复后代码可编译
+
+#### 3. 内容完整性验证
+- 每个迁移文件：验证除 package/import 行外的内容与源文件完全一致
+- 检查是否有中文字符被截断（搜索单独的 "?" 字符出现在中文语境中）
+
+#### 4. 文件数量验证
+- 迁移前后的 Service 接口文件总数必须相等
+- 迁移前后的 Service 实现文件总数必须相等
+- 非 Service 文件不应有增减
 
 ### 安全约束
 
