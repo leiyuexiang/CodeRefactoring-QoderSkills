@@ -15,6 +15,7 @@
 - **S-04**: 配置类（config/）迁移需特别注意 `@ComponentScan` 扫描路径是否覆盖
 - **S-05**: 禁止移动 `@MapperScan` 配置类（与 DAO 层强耦合）
 - **S-06**: 如果 common 模块中已存在同名类，禁止覆盖，需人工决策
+- **S-07**: **编码保留**：迁移文件时必须保持原文件的字符编码格式（如 UTF-8、UTF-8 with BOM、GBK 等）。原文件为 UTF-8 with BOM（首3字节为 EF BB BF）时，新文件必须保留 BOM。优先使用 Bash 的 `cp`/`copy` 命令复制文件到目标位置（保留编码），再用 Edit 修改 package 声明；避免使用 Read → Write 方式重建文件导致编码丢失或中文乱码
 
 ## 允许修改的范围
 

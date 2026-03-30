@@ -178,6 +178,7 @@ mvn compile -pl {module}-module -am 2>&1
 3. **不改变业务逻辑**，只调整 pom.xml 和 Java 的 package/import
 4. **必须用户确认后执行**，不可静默执行
 5. **先改被依赖方**（service），再改依赖方（controller），保证中间状态可控
+6. **编码保留**：修改或迁移文件时必须保持原文件的字符编码格式（如 UTF-8、UTF-8 with BOM、GBK 等）。原文件为 UTF-8 with BOM（首3字节为 EF BB BF）时，新文件必须保留 BOM。优先使用 Edit 工具进行精确替换（自动保留编码），避免使用 Write 工具重写整个文件导致编码丢失或中文乱码。物理目录移动时使用 Bash 的 `mv` 命令（保留编码）
 
 ## 文件索引
 

@@ -32,6 +32,12 @@ package grp.pt.util;  // 通常不变，因为 common 模块保持相同的 pack
 目标路径: grp-common-{module}/src/main/java/{package}/{type}/{ClassName}.java
 ```
 
+**编码保留（强制）**：
+- 必须保持原文件的字符编码格式（如 UTF-8、UTF-8 with BOM、GBK 等）
+- 原文件为 UTF-8 with BOM（首3字节为 EF BB BF）时，新文件必须保留 BOM
+- **推荐方式**：先通过 Bash 的 `cp`/`copy` 命令复制文件到目标位置（保留编码），再用 Edit 修改 package 声明行
+- **备选方式**：使用 Write 工具写入内容时注意编码一致性，但需注意 Write 工具可能丢失 BOM
+
 ### Step 4: Grep（搜索引用）
 
 ```
