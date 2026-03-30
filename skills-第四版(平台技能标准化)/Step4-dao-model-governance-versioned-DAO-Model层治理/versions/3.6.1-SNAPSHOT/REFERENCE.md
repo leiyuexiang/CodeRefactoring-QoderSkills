@@ -36,13 +36,13 @@
 
 | 编号 | 检查项 | 严重级别 | 说明 |
 |------|--------|---------|------|
-| S2-01 | 目录命名规范（imp→impl） | FAIL | 非标准命名影响协作一致性 |
-| S2-02 | DAO 层接口/实现分离 | FAIL/WARN | 实现类应在 impl/ 下 |
+| S2-01 | 目录命名规范（imp→impl） | FAIL | 非标准命名影响协作一致性，含合成词变体检测 |
+| S2-02 | DAO 层接口/实现分离 | FAIL/WARN | 基于文件名确定性分类规则表判定 |
 | S2-03 | DTO/VO/Query 分类归档 | FAIL/WARN | 按类型归入正确子目录 |
 | S2-04 | 核心四层目录完整性 | WARN | controller/service/dao/model |
 | S2-05 | resources/mapper 目录对应 | WARN | MyBatis XML 按模块分组 |
-| S2-06 | DAO 层 mapper/entity 分离 | FAIL/WARN | Mapper 和 Entity 应分离到子目录 |
-| S2-07 | Model 层 dto/vo/query 分类 | FAIL/WARN | 按类型归入正确子目录 |
+| S2-06 | DAO 层 mapper/entity 分离 | FAIL | Mapper 和 Entity 应分离到子目录，禁止冗余副本 |
+| S2-07 | Model 层 dto/vo/query/po 分类 | FAIL | 按 6 级优先级匹配链归入子目录，含 BO→vo 归类，无后缀文件兜底归入 po/ |
 | S2-08 | 公共模块结构 | WARN | config/util/exception 等标准子目录 |
 
 完整检查规则详情 → [scripts/check-rules.md](scripts/check-rules.md)
@@ -51,16 +51,25 @@
 
 ## 功能一：DAO-Model 层检查流程
 
-### Step 1: 确定检查范围
+### Step 0: 识别独立业务域模块
 
-用户提供目录路径或模块名称。
+在执行任何检查前，先识别并记录项目中的独立业务域模块（如 `view/`），将其排除在检查范围之外。
+
+判定标准详见 → [scripts/check-rules.md](scripts/check-rules.md) 全局前置规则
+
+### Step 1: 确定检查范围与冻结快照
+
+用户提供目录路径或模块名称。同时：
+- 一次性检查 `model/qo/` 目录是否存在，记录为 `HAS_QO_DIR` 布尔标志
+- 一次性确定 import 搜索根目录（顶级父 POM 所在目录）
+- 以上判定结果在整个流程中保持冻结，不再重新判定
 
 ### Step 2: 扫描目录结构
 
 逐层扫描 DAO/Model 各层目录结构：
-- 使用 Glob 扫描目录结构
-- 使用 Grep 搜索 `@Repository`、`@Mapper`、`class.*DTO`、`class.*VO` 等模式
-- 使用 Read 读取关键文件确认类型
+- 使用 Glob 扫描目录结构和文件名
+- DAO 层分类仅依据文件名和目录位置（不读取文件内容检查注解）
+- Model 分类仅依据文件名后缀的 endsWith 匹配（不读取文件内容）
 
 ### Step 3: 逐项检查
 
@@ -81,13 +90,20 @@
 ### 核心原则
 
 1. **只动目录和包路径，不改业务逻辑**：仅修改 package 声明和 import 语句
-2. **安全迁移**：先读取原文件 → 在新位置创建文件 → 更新引用 → 删除原文件
+2. **安全迁移**：先读取原文件 → 冲突预检 → 在新位置创建文件 → 更新引用 → 删除原文件
 3. **逐步执行**：按优先级逐项修复，每完成一项向用户确认
 4. **保持可编译**：迁移后确保所有 import 路径和 package 声明正确
+5. **确定性原则**：Model 分类完全依据类名后缀的 endsWith 机械匹配（6 级优先级链），DAO 分类完全依据文件名和目录位置（8 级分类规则表），禁止通过阅读文件内容或分析类用途来决定分类
+6. **职责边界**：Step4 仅负责 DAO-Model 层目录治理，禁止创建 Service 类、禁止修改 Controller 逻辑、禁止修改 POM 依赖
+7. **独立业务域模块豁免**：满足豁免标准的模块内部文件不做任何迁移
 
-### Phase 1: 扫描分析
+### Phase 1: 扫描分析与冻结快照
 
-扫描 DAO/Model 目录结构，识别不合规项。
+扫描 DAO/Model 目录结构，识别不合规项。同时：
+- 识别并记录独立业务域模块（豁免列表）
+- 记录 `HAS_QO_DIR` 标志（model/qo/ 是否存在）
+- 确定 import 搜索根目录（顶级父 POM 所在目录）
+- 以上所有判定结果在后续 Phase 中保持冻结
 
 ### Phase 2: 生成修复计划
 
@@ -99,18 +115,17 @@
 
 ### Phase 4: 逐项执行修复
 
-按 6 大修复规范和优先级执行：
+按以下 **5 大修复步骤**和优先级顺序执行（每步完成后再进入下一步，不重复）：
 
-1. 目录命名修正（imp→impl）
-2. DAO 层归位（实现类移入 impl/）
-3. DTO/VO/Query 归类
-4. 创建缺失目录
-5. DAO 层 mapper/entity 分离
-6. Model 层 dto/vo/query 分类
+1. **目录命名修正**（对应修复规范一）：`imp` → `impl`，包括合成词变体如 `serviceImp` → `impl`
+2. **DAO 层归位**（对应修复规范二 + 修复规范五，合并执行）：按确定性分类规则表处理 `dao/` 根目录文件（实现类移入 `impl/`），Mapper 迁入 `dao/mapper/`，Entity 归入 `dao/entity/`，冗余 Mapper 副本清理
+3. **Model 层文件分类**（对应修复规范三 + 修复规范六，合并为单一步骤）：按 6 级优先级匹配链将 `model/` 根目录散落文件归入 dto/vo/query/po 子目录，BO 归入 vo/，无后缀文件兜底归入 po/
+4. **创建缺失标准子目录**（对应修复规范四）：仅创建目录，不移动文件
+5. **全局验证无残留**：Grep 搜索所有旧包路径，确认无遗漏引用
 
 完整修复规则 → [scripts/refactor-rules.md](scripts/refactor-rules.md)
 标准目录结构模板 → [templates/standard-directory.md](templates/standard-directory.md)
-文件迁移标准流程 → [examples/migration-flow.md](examples/migration-flow.md)
+文件迁移标准流程（8步） → [examples/migration-flow.md](examples/migration-flow.md)
 
 ### Phase 5: 验证结果
 
@@ -129,6 +144,8 @@
 - **不修改** HTTP 接口的 URL、HTTP 方法
 - **不修改** 任何业务逻辑代码
 - 务必在重构前获得用户确认
+- **迁移前必须冲突预检**（目标位置同名文件检测）
+- **独立业务域模块内部不做迁移**
 
 ---
 
@@ -139,18 +156,18 @@
 | 文件 | 说明 |
 |------|------|
 | [examples/check-report.md](examples/check-report.md) | DAO-Model 层检查报告输出示例 |
-| [examples/migration-flow.md](examples/migration-flow.md) | 文件迁移标准流程与操作示例 |
+| [examples/migration-flow.md](examples/migration-flow.md) | 文件迁移标准流程（8步）与操作示例 |
 
 ### 模板文件 (templates/)
 
 | 文件 | 说明 |
 |------|------|
-| [templates/standard-directory.md](templates/standard-directory.md) | 标准目录结构模板（DAO层+Model层+公共模块） |
+| [templates/standard-directory.md](templates/standard-directory.md) | 标准目录结构模板（DAO层+Model层+公共模块），含确定性分类规则表 |
 
 ### 规则/脚本文件 (scripts/)
 
 | 文件 | 说明 |
 |------|------|
-| [scripts/check-rules.md](scripts/check-rules.md) | S2 检查规则清单（8 项详细检查方法与判定标准） |
-| [scripts/refactor-rules.md](scripts/refactor-rules.md) | S2 修复规范（6 大修复策略与执行步骤） |
-| [scripts/safety-constraints.md](scripts/safety-constraints.md) | 修复安全约束与核心原则 |
+| [scripts/check-rules.md](scripts/check-rules.md) | S2 检查规则清单（全局前置规则 + 8 项详细检查方法与判定标准） |
+| [scripts/refactor-rules.md](scripts/refactor-rules.md) | S2 修复规范（全局前置规则 + 6 大修复策略与执行步骤 + import 搜索范围定义） |
+| [scripts/safety-constraints.md](scripts/safety-constraints.md) | 修复安全约束与核心原则（含冲突预检规则与独立业务域模块豁免） |

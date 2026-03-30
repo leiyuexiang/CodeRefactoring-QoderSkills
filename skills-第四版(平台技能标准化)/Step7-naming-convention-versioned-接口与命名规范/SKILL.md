@@ -110,41 +110,22 @@ S5-naming-convention-versioned-接口与命名规范/
 ├── SKILL.md                          # 本文件 - 版本检测与路由入口
 └── versions/
     ├── 3.6.0-SNAPSHOT/               # 基线版本
-    │   ├── REFERENCE.md                  # 该版本完整规则
+    │   ├── REFERENCE.md              # 该版本完整规则（含处理顺序、报告模板）
     │   ├── scripts/                  # 检查/修复规则脚本
-    │   │   ├── check-rules.md
-    │   │   ├── refactor-rules.md
-    │   │   ├── safety-constraints.md
-    │   │   └── constraint-classification.md
+    │   │   ├── check-rules.md            # 精确正则、扫描范围、边界场景
+    │   │   ├── refactor-rules.md         # 注解转换、import管理、注入点处理
+    │   │   ├── safety-constraints.md     # 安全约束、幂等性保障
+    │   │   ├── constraint-classification.md  # 可修复vs约束限制分类
+    │   │   └── deterministic-rules.md    # 确定性决策树、一致性规则
     │   ├── examples/                 # 示例文件
-    │   │   ├── check-report.md
-    │   │   └── migration-flow.md
+    │   │   ├── check-report.md           # 检查报告强制模板
+    │   │   └── migration-flow.md         # 修正流程完整示例
     │   └── templates/                # 命名规范模板
-    │       └── naming-convention.md
-    ├── 3.6.1-SNAPSHOT/               # 增量修订版本
-    │   ├── REFERENCE.md
-    │   ├── scripts/
-    │   │   ├── check-rules.md
-    │   │   ├── refactor-rules.md
-    │   │   ├── safety-constraints.md
-    │   │   └── constraint-classification.md
-    │   ├── examples/
-    │   │   ├── check-report.md
-    │   │   └── migration-flow.md
-    │   └── templates/
-    │       └── naming-convention.md
-    └── 3.7.0-SNAPSHOT/               # 新特性版本
-        ├── REFERENCE.md
-        ├── scripts/
-        │   ├── check-rules.md
-        │   ├── refactor-rules.md
-        │   ├── safety-constraints.md
-        │   └── constraint-classification.md
-        ├── examples/
-        │   ├── check-report.md
-        │   └── migration-flow.md
-        └── templates/
-            └── naming-convention.md
+    │       └── naming-convention.md      # 速查表（含转换规则、边界场景）
+    ├── 3.6.1-SNAPSHOT/               # 增量修订版本（同基线版本结构）
+    │   └── ...（同 3.6.0-SNAPSHOT 结构）
+    └── 3.7.0-SNAPSHOT/               # 新特性版本（同基线版本结构）
+        └── ...（同 3.6.0-SNAPSHOT 结构）
 ```
 
 ## 添加新版本

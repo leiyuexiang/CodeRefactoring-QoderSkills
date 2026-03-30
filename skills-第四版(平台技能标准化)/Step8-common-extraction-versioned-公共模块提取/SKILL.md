@@ -82,9 +82,10 @@ Step8-common-extraction-versioned-公共模块提取/
     ├── 3.6.0-SNAPSHOT/               # 基线版本
     │   ├── REFERENCE.md              # 该版本完整规则
     │   ├── scripts/
-    │   │   ├── check-rules.md        # 检查规则（哪些包应提取）
-    │   │   ├── refactor-rules.md     # 提取迁移规范
-    │   │   └── safety-constraints.md # 安全约束
+    │   │   ├── check-rules.md           # 检查规则（含 Grep 模式和量化判定标准）
+    │   │   ├── classification-guide.md  # 文件分类判定指南（全局决策树）
+    │   │   ├── refactor-rules.md        # 迁移执行规范（7步流程+映射表）
+    │   │   └── safety-constraints.md    # 安全约束与红线（含精确判定逻辑）
     │   ├── templates/
     │   │   └── standard-directory.md # common模块标准目录结构
     │   └── examples/

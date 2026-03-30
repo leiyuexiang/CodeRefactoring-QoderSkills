@@ -44,8 +44,13 @@ Grep pattern: import.*\.controller\.[A-Z][a-zA-Z]*Controller
 Grep path: {controller-module-src-path}
 Grep flags: -l（仅列出文件名）
 
-# 扫描2：全 controller 模块目录下所有注入了 XxxController 类型字段的文件  
+# 扫描2：全 controller 模块目录下所有注入了 XxxController 类型字段的文件（@Autowired）
 Grep pattern: @Autowired[\s\S]{0,50}[A-Z][a-zA-Z]*Controller
+Grep path: {controller-module-src-path}
+Grep flags: -l
+
+# 扫描3：全 controller 模块目录下所有通过 @Resource 注入了 XxxController 类型字段的文件
+Grep pattern: @Resource[\s\S]{0,50}[A-Z][a-zA-Z]*Controller
 Grep path: {controller-module-src-path}
 Grep flags: -l
 ```
@@ -57,10 +62,11 @@ Grep flags: -l
 - 检查被注入类型是否为另一个 `@RestController` 或 `@Controller` 类
 - 检查 Controller 方法体中是否直接调用了其他 Controller 的方法
 - **特别注意**：被注入类即使标注了 `@Service` 注解，只要类名以 `Controller` 结尾，仍判定为 S1-01
+- **特别注意**：`@Resource` 注入的 Controller 同样判定为 S1-01，不得因为注入方式不同而跳过
 
 **判定标准**：
 - Controller 类中存在 `import xxx.controller.XxxController` → **FAIL**
-- Controller 类中存在 `@Autowired XxxController` → **FAIL**
+- Controller 类中存在 `@Autowired XxxController` 或 `@Resource XxxController` → **FAIL**
 - Controller 方法中调用 `xxxController.someMethod()` → **FAIL**
 
 **风险说明**：Controller 之间直接依赖会导致同层耦合、循环依赖风险，违反"同层不依赖"原则。
@@ -94,8 +100,8 @@ Grep flags: -l
 - 检查被注入类型是否为 `@Repository` 类、`@Mapper` 接口、或命名以 `Dao`/`Mapper` 结尾的类
 
 **判定标准**：
-- Controller 类中存在 `@Autowired XxxDao xxxDao` → **FAIL**
-- Controller 类中存在 `@Autowired XxxMapper xxxMapper` → **FAIL**
+- Controller 类中存在 `@Autowired XxxDao xxxDao` 或 `@Resource XxxDao xxxDao` → **FAIL**
+- Controller 类中存在 `@Autowired XxxMapper xxxMapper` 或 `@Resource XxxMapper xxxMapper` → **FAIL**
 - Controller 类中存在 `import xxx.dao.XxxDao` 或 `import xxx.mapper.XxxMapper` → **FAIL**
 
 **风险说明**：跳过 Service 层会导致业务逻辑散落在 Controller 中，无法复用、无法统一事务管理。

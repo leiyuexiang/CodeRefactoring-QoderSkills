@@ -30,10 +30,12 @@ Phase 5: 验证与清理
 
 #### 准入条件（必须满足至少一项）
 
-| 编号 | 条件 | 验证方式 |
-|------|------|---------|
-| GATE-ADMIT-01 | 文件包含**未被注释**的 `@RestController` 注解 | Grep 搜索 `@RestController`，排除 `//` 或 `/*` 开头的行 |
-| GATE-ADMIT-02 | 文件包含**未被注释**的 `@Controller` 注解 | Grep 搜索 `@Controller`，排除 `//` 或 `/*` 开头的行 |
+| 编号 | 条件 | 验证方式 | 精确 Grep 正则 |
+|------|------|---------|--------------|
+| GATE-ADMIT-01 | 文件包含**未被注释**的 `@RestController` 注解 | Grep 搜索，排除 `//` 或 `/*` 开头的行 | `^\s*@RestController` |
+| GATE-ADMIT-02 | 文件包含**未被注释**的 `@Controller` 注解 | Grep 搜索，排除 `//` 或 `/*` 开头的行 | `^\s*@Controller\b` |
+
+> **精确正则约束**：AI 执行门控检查时**必须使用上表中的精确 Grep 正则**，不得自行构造简化正则。完整正则模式清单见 [templates/classification-guide.md 的 GATE-REGEX 表](../templates/classification-guide.md)。
 
 #### 排除条件（命中任一项即排除）
 
@@ -75,6 +77,63 @@ Phase 5: 验证与清理
 **重要约束：必须采用四轮逐区扫描策略，不得使用单次全局 Grep 替代。每轮扫描必须独立输出结果后才进入下一轮。**
 
 **重要约束：每轮扫描必须严格执行步骤 1.0 的门控检查，逐文件验证注解有效性，不得凭文件名推断。**
+
+**重要约束：每轮扫描必须使用 GATE-REGEX 表中的精确正则模式，不得自行构造简化正则。完整正则模式清单见 [templates/classification-guide.md 的 GATE-REGEX 表](../templates/classification-guide.md)。**
+
+#### 扫描精确工具调用模式（SCAN-TOOL-PATTERNS）
+
+> **以下为四轮扫描中每个步骤必须使用的精确工具调用模式。AI 不得自行替换这些模式。**
+
+```
+// 模式 S1: 列出目标目录下的所有 Java 文件
+Glob(pattern="**/*.java", path="{scanDirectory}")
+
+// 模式 S2: 在单个文件中检测有效 @RestController（非注释行）
+Grep(pattern="^\s*@RestController", path="{filePath}")
+
+// 模式 S3: 在单个文件中检测有效 @Controller（非注释行，排除 @ControllerAdvice）
+Grep(pattern="^\s*@Controller\b", path="{filePath}")
+
+// 模式 S4: 在单个文件中检测被注释的 Controller 注解
+Grep(pattern="^\s*//.*@(Rest)?Controller", path="{filePath}")
+
+// 模式 S5: 在单个文件中检测 @FeignClient
+Grep(pattern="^\s*@FeignClient", path="{filePath}")
+
+// 模式 S6: 在单个文件中检测 @Service/@Component/@Repository
+Grep(pattern="^\s*@(Service|Component|Repository)\b", path="{filePath}")
+
+// 模式 S7: 在目录树中批量搜索 Controller 注解（用于全量验证）
+Grep(pattern="^\s*@(RestController|Controller\b)", path="{srcMainJavaDir}", glob="*.java")
+
+// 模式 S8: 检测 package 声明
+Grep(pattern="^package\s+", path="{filePath}")
+```
+
+#### 单文件门控检查标准流程（SCAN-PER-FILE）
+
+> **对每个 Glob 发现的 .java 文件，必须按以下顺序执行门控检查。此流程为 classification-guide.md 中 GATE-ALGORITHM 的工具级实现。**
+
+```
+FOR EACH javaFile IN Glob结果:
+    Step SF-1: Grep(S5, filePath=javaFile) → 若命中 @FeignClient，排除（GC-EXCL-01），记录排除原因，CONTINUE
+    Step SF-2: Grep(S8, filePath=javaFile) → 提取 package 路径
+             IF package 含 ".rpc." 或 ".feignclient."，排除（GC-EXCL-02），记录排除原因，CONTINUE
+    Step SF-3: Grep(S2, filePath=javaFile) → 检查 @RestController
+    Step SF-4: Grep(S4, filePath=javaFile) → 检查是否被注释
+    Step SF-5: 判定有效性：
+             IF S2有结果 AND (S4无结果 OR S2中存在不在S4中的行)
+                 → 有效 @RestController，记录行号，加入 Controller 清单
+             ELSE:
+                 Grep(S3, filePath=javaFile) → 检查 @Controller
+                 IF S3有结果 AND (S4无结果 OR S3中存在不在S4中的行)
+                     → 有效 @Controller，记录行号，加入 Controller 清单
+                 ELSE:
+                     Grep(S6, filePath=javaFile) → 检查 @Service/@Component/@Repository
+                     IF S6有结果 → 排除（GC-EXCL-04），记录排除原因
+                     ELSE IF S4有结果 → 排除（GC-EXCL-03：注解被注释），记录排除原因
+                     ELSE → 排除（GC-EXCL-05：无Spring注解），记录排除原因
+```
 
 ---
 
@@ -331,26 +390,28 @@ controller/ 及其他目录扫描完成：共发现 Nother 个 Controller
 
 ```
 步骤 1: Read 原文件（完整读取，不可省略）
-    → 使用 read_file 工具获取完整文件内容（包括所有方法体、注释、import）
+    → 使用 Read 工具获取完整文件内容（包括所有方法体、注释、import）
     → 记录原文件总行数 originalLineCount
     → ⚠️ 禁止仅读取部分内容或仅读取类签名
+    → ⚠️ 如果文件行数 > 2000 行，必须分段读取并拼接完整内容
 
 步骤 2: 修改 package 声明（仅此一行）
     → 将 package 行替换为目标 package
     → 仅修改 package 声明行，不修改其他任何内容
     → ⚠️ 禁止修改或删除方法体、字段、注解、注释中的任何字符
+    → 精确操作：Edit(old_string="package {原package};", new_string="package {目标package};")
 
 步骤 3: Write 新文件（完整写入 + 编码保留 + 行数校验）
     → 将修改后的完整内容写入目标路径
     → 目标路径 = 将 targetPackage 转换为目录结构 + "/" + ClassName.java
     → ⚠️ 编码保留：必须保持原文件的字符编码格式（如 UTF-8 BOM 则写入时也带 BOM）
-    → ⚠️ 推荐使用 search_replace 工具（自动保留编码），而非 create_file（可能丢失 BOM）
+    → ⚠️ 推荐使用 Edit 工具（自动保留编码），而非 Write（可能丢失 BOM）
     → ⚠️ 行数校验（强制）：写入后新文件行数与 originalLineCount 之差不得超过 ±2 行
       （仅允许 package 行长度变化和 import 增删导致的微小差异）
       如果差异 > 2 行，说明内容被意外删除或修改，**必须立即回退并重新执行步骤 1~3**
 
 步骤 4: Grep 搜索引用
-    → 在整个工程中搜索 import 原 package + ClassName 的所有文件
+    → Grep(pattern="import\s+{原package}\.{ClassName}\s*;", path="{srcMainJavaDir}")
     → 记录所有引用方文件列表
 
 步骤 5: Edit 更新 import 引用（双向更新）
@@ -362,15 +423,17 @@ controller/ 及其他目录扫描完成：共发现 Nother 个 Controller
     → 同时检查被迁移 Controller 自身的 import 语句中，是否引用了其他已迁移或待迁移 Controller 的旧路径
     → 如果存在，同步更新为对应的目标 package 路径
     → 即使被引用的 Controller B 尚未迁移，也应根据 Phase 2 计划表中 B 的目标 package 提前更新 A 中对 B 的 import 路径
+    → 使用 IMPORT-TRACKING-MAP（见下方）系统化执行此步骤，不依赖 AI 记忆
     → 示例：UiViewCatelogController 已迁移，其 import 中引用 config.year.controller.YearController（也待迁移），
       则需将该 import 更新为 controller.custom.year.YearController
 
 步骤 5.5: 检查 @ComponentScan 引用
-    → Grep 搜索 @ComponentScan 注解中引用原 package 路径的配置类
+    → Grep(pattern="{原package（转义.为\\.）}", path="{srcMainJavaDir}", glob="*.java")
+    → 过滤出包含 @ComponentScan 的文件
     → 如果找到，更新 basePackages 值
 
 步骤 5.6: 检查 Spring XML 配置引用
-    → Grep 搜索 applicationContext*.xml、spring*.xml 中引用原 package 路径的位置
+    → Grep(pattern="{原package}", path="{resourceDir}", glob="*.xml")
     → 如果找到，更新 component-scan base-package 值
 
 步骤 6: Delete 原文件
@@ -382,6 +445,35 @@ controller/ 及其他目录扫描完成：共发现 Nother 个 Controller
     → ⚠️ 行数完整性校验（强制）：对比新文件行数与步骤 1 记录的 originalLineCount
       差值 > 2 则为 FAIL，必须回滚并重做
 ```
+
+### Import 跟踪映射表算法（IMPORT-TRACKING-MAP）
+
+> **以下算法解决 S-12 交叉引用更新的一致性问题。AI 必须在 Phase 4 开始前构建映射表，在每个文件迁移的步骤 5 中查表更新，不依赖 AI 记忆。**
+
+```
+// Phase 4 开始前，从 Phase 2 计划表构建映射表
+FUNCTION buildImportTrackingMap(migrationPlan):
+    MAP = {}  // key: 旧完整类引用路径, value: 新完整类引用路径
+    FOR EACH entry IN migrationPlan WHERE entry.operation == "MIGRATE":
+        oldImportPath = entry.currentPackage + "." + entry.className
+        newImportPath = entry.targetPackage + "." + entry.className
+        MAP[oldImportPath] = newImportPath
+    RETURN MAP
+
+// 每个文件迁移的步骤 5 中，使用映射表更新当前文件内部的交叉引用
+FUNCTION updateCrossReferences(currentFile, IMPORT_MAP):
+    content = Read(currentFile)
+    FOR EACH oldPath IN IMPORT_MAP.keys():
+        IF content CONTAINS "import " + oldPath + ";"
+            Edit(currentFile, 
+                 old_string="import " + oldPath + ";",
+                 new_string="import " + IMPORT_MAP[oldPath] + ";")
+```
+
+**关键约束**：
+- 映射表在 Phase 4 开始前一次性构建，Phase 4 执行期间**只读不写**
+- 每个文件迁移的步骤 5 中，必须遍历映射表检查当前文件的所有 import 行
+- 不依赖 AI "记住"哪些文件已经迁移，而是机械化查表
 
 ### 文件内容完整性保障规则（INTEGRITY）
 
@@ -507,3 +599,68 @@ import 引用完整性验证：
   - 文件内容完整性：PASS（或 FAIL + 行数异常文件列表，见 S-13）
   - 编码保留：PASS（或 FAIL + BOM丢失文件列表，见 S-14）
 ```
+
+---
+
+## 批处理完整性保障规则（BATCH-INTEGRITY）
+
+> **以下规则确保大量文件迁移时不会遗漏或重复处理。AI 必须严格遵守，不得因上下文窗口限制而跳过任何文件。**
+
+| 编号 | 规则 | 说明 |
+|------|------|------|
+| BATCH-01 | **迁移清单持久化** | Phase 2 生成的迁移计划表必须作为结构化数据保持可引用状态。Phase 4 中每处理一个文件后，在计划表中标记该文件为"已完成"。不得依赖 AI 记忆来追踪哪些文件已处理 |
+| BATCH-02 | **序号连续校验** | 每个文件迁移完成后，输出当前序号 `[X/M]`。序号必须连续递增，不得跳号。如果发现跳号（如从 15 直接到 18），必须停止并回溯查找遗漏 |
+| BATCH-03 | **分批输出约束** | 如果 MIGRATE 总数 M > 20，AI 必须分批处理：每批不超过 20 个文件，每批结束后输出批次完成摘要，确认本批所有文件均已处理 |
+| BATCH-04 | **Phase 4 中途校验** | 每处理完 20 个文件，必须输出中途校验：列出已处理文件名清单 + 剩余文件名清单，二者之和必须等于 M |
+| BATCH-05 | **禁止提前总结** | 如果 M > 0 但 AI 输出"所有文件已迁移完成"而实际已处理数 < M，此为严重错误。Phase 4 完成校验（M = X）是唯一的完成判定条件 |
+| BATCH-06 | **大文件保护** | 对于行数 > 500 的文件，迁移时必须在步骤 3 后立即执行行数校验，不等到步骤 7。差值 > 2 则立即回滚重做 |
+
+### 批处理状态追踪格式
+
+```
+【Phase 4 批次状态追踪】
+批次 B/T（B=当前批次，T=总批次数）
+
+已完成：
+  [1/M] ClassName1 ✅ (L2→common/sso)
+  [2/M] ClassName2 ✅ (L3→custom/user)
+  ...
+  [X/M] ClassNameX ✅ (L3→custom/admin)
+
+待处理：
+  [X+1/M] ClassNameX1 (L3→custom/work)
+  ...
+  [M/M] ClassNameM (L3→custom/portal)
+
+校验：已处理 X + 待处理 (M-X) = M ✅
+```
+
+---
+
+## 一致性保证检查清单（CONSISTENCY-CHECKLIST）
+
+> **AI 在每次执行 Step6 之前，必须阅读并确认以下检查清单。这些是导致多次执行不一致的已知根因。**
+
+### 执行前自检（PRE-EXECUTION）
+
+| # | 检查项 | 确认方式 |
+|---|--------|---------|
+| PRE-01 | 已阅读 GATE-REGEX 精确正则表 | 使用表中正则执行门控检查，不自行构造 |
+| PRE-02 | 已阅读 CLASSIFICATION-PIPELINE 伪代码 | 对每个文件按伪代码逐步执行分类 |
+| PRE-03 | 已阅读 COMMON-MISTAKES 错误目录 | 避免 CM-01~CM-10 中的所有已知错误 |
+| PRE-04 | 已阅读 CLASSIFICATION-TEST-CASES | 可用测试用例自检分类算法正确性 |
+| PRE-05 | 已理解 IMPORT-TRACKING-MAP 算法 | Phase 4 开始前构建映射表，步骤 5 中查表更新 |
+| PRE-06 | 已理解 BATCH-INTEGRITY 规则 | 大量文件迁移时分批处理，持续追踪状态 |
+
+### 执行中校验点（MID-EXECUTION）
+
+| # | 校验点 | 触发时机 | 检查内容 |
+|---|--------|---------|---------|
+| MID-01 | 分区扫描交叉验证 | Phase 1 步骤 1.1.4 完成时 | N = Nc + Nc2 + Nother = Nfull |
+| MID-02 | 迁移清单数量校验 | Phase 1 步骤 1.4 完成时 | N = M + K |
+| MID-03 | Phase 2 计划表完整性 | Phase 2 完成时 | 表中行数 = M（MIGRATE）+ K（SKIP） |
+| MID-04 | IMPORT-TRACKING-MAP 构建 | Phase 4 开始前 | 映射表条目数 = M |
+| MID-05 | 每 10 文件进度校验 | Phase 4 每 10 个文件 | 累计处理数正确，序号连续 |
+| MID-06 | Phase 4→5 过渡门控 | Phase 4 完成时 | 实际已迁移数 X = 计划迁移数 M |
+| MID-07 | 交叉引用全量检查 | Phase 5 步骤 5.1.2 | 所有已迁移文件的 import 均不含旧路径 |
+| MID-08 | 文件内容完整性 | Phase 5 步骤 5.1.4 | 所有已迁移文件行数差 ≤ 2 |

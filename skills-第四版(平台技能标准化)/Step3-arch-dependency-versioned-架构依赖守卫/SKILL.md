@@ -73,6 +73,17 @@ description: "[Step3] Java微服务分层架构依赖检查与修复工具（多
 
 **加载路径模板：** `versions/{matched-version}/REFERENCE.md`
 
+**重要：非基线版本的强制基线文件加载**
+
+当匹配到非基线版本（如 3.6.1-SNAPSHOT、3.7.0-SNAPSHOT）时，该版本的 `REFERENCE.md` 中包含**强制基线文件加载指令**。这些版本继承 3.6.0-SNAPSHOT 基线版本的全部规则，自身仅作为索引。**必须按照 REFERENCE.md 中的加载指令，读取基线版本（3.6.0-SNAPSHOT）的完整规则文件后再执行操作。**
+
+基线版本（3.6.0-SNAPSHOT）包含的完整规则：
+- 检查规则：`scripts/check-rules.md`（含违规编号判定优先级、全量扫描指令）
+- 修复规范：`scripts/refactor-rules.md`（含4大修复策略、FCC指令、修复顺序、import排序、方法调用替换）
+- 安全约束：`scripts/safety-constraints.md`（S-01~S-17共17条红线）
+- 接口设计：`scripts/interface-design-rules.md`（D-01~D-11共11条确定性规则）
+- 完整性校验：`scripts/completeness-check.md`（V-01~V-06）
+
 ### Step 2: 执行检查或修复
 
 按照加载的版本规则执行具体的架构依赖检查或修复操作。规则文件中包含：
@@ -112,8 +123,8 @@ S1-arch-dependency-versioned-架构依赖守卫/
     │   └── scripts/                  # 检查/修复规则脚本
     │       ├── check-rules.md            # S1 检查规则
     │       ├── refactor-rules.md         # 修复规范（含决策树+AI标记规范）
-    │       ├── safety-constraints.md     # 安全约束（S-01~S-10）
-    │       ├── interface-design-rules.md # 接口设计规范（D-01~D-07）
+    │       ├── safety-constraints.md     # 安全约束（S-01~S-17）
+    │       ├── interface-design-rules.md # 接口设计规范（D-01~D-11）
     │       └── completeness-check.md     # 完整性校验清单（V-01~V-06）
     ├── 3.6.1-SNAPSHOT/               # 增量修订版本
     │   ├── REFERENCE.md

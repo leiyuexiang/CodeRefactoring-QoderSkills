@@ -40,3 +40,17 @@
 - Controller 类中的方法调用链（将 Controller 调用改为 Service 调用）
 - 新建 Service 接口文件和 ServiceImpl 实现文件
 - 新建 DTO/VO/Query 类文件（Entity 泄露修复时）
+
+---
+
+## 规则交叉引用索引
+
+确保执行修复时不遗漏任何确定性规则，以下是所有规则的交叉引用：
+
+| 规则编号 | 规则名称 | 所在文件 |
+|---------|---------|---------|
+| C-01~C-04 | 核心原则 | safety-constraints.md（本文件）|
+| S-01~S-17 | 安全约束红线 | safety-constraints.md（本文件）|
+| D-01~D-11 | 接口设计确定性规范 | interface-design-rules.md |
+| V-01~V-06 | 完整性校验清单 | completeness-check.md |
+| FCC | 强制原样复制指令 | refactor-rules.md |

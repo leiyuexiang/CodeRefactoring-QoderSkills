@@ -23,6 +23,19 @@
 
 与 3.6.0-SNAPSHOT 基线一致：三级确定性分类链（Level 1 精确映射 → Level 2 关键词匹配 → Level 3 默认 custom），零依赖业务语义解读。
 
+### 确定性实现机制（继承自 3.6.0-SNAPSHOT）
+
+本版本继承 3.6.0-SNAPSHOT 的 **6 大确定性机制**：
+
+| 机制 | 所在文件 | 作用 |
+|------|---------|------|
+| **GATE-REGEX 精确正则表** | [templates/classification-guide.md](templates/classification-guide.md) | 9 个精确正则模式，消除门控检查中的模糊判定 |
+| **GATE-ALGORITHM 门控伪代码** | [templates/classification-guide.md](templates/classification-guide.md) | 可执行的门控检查算法，步骤严格有序 |
+| **CLASSIFICATION-PIPELINE 分类伪代码** | [templates/classification-guide.md](templates/classification-guide.md) | 完整分类管线算法（含 classifyController + extractBusinessGroup + computeTargetPackage） |
+| **SCAN-TOOL-PATTERNS 工具调用模式** | [scripts/refactor-rules.md](scripts/refactor-rules.md) | 8 个精确的 Grep/Glob 调用模式 |
+| **SCAN-PER-FILE 单文件流程** | [scripts/refactor-rules.md](scripts/refactor-rules.md) | 每个文件的门控检查标准流程（SF-1~SF-5） |
+| **IMPORT-TRACKING-MAP 引用映射表** | [scripts/refactor-rules.md](scripts/refactor-rules.md) | 系统化的交叉引用更新算法 |
+
 ## 重构策略
 
 采用**集中重构**策略，与 3.6.0-SNAPSHOT 基线一致。禁止就地重构。
@@ -75,12 +88,12 @@
 | 文件 | 说明 |
 |------|------|
 | [templates/standard-directory.md](templates/standard-directory.md) | custom/common 标准目录结构模板（集中重构模式） |
-| [templates/classification-guide.md](templates/classification-guide.md) | 三级确定性分类指南（映射表 + 转换公式） |
+| [templates/classification-guide.md](templates/classification-guide.md) | 三级确定性分类指南（映射表 + 转换公式 + 可执行伪代码 + 测试用例） |
 
 ### 规则/脚本文件 (scripts/)
 
 | 文件 | 说明 |
 |------|------|
-| [scripts/check-rules.md](scripts/check-rules.md) | S4 检查规则清单（5 项详细检查方法与判定标准） |
-| [scripts/refactor-rules.md](scripts/refactor-rules.md) | S4 修复规范（统一迁移公式与 9 步标准流程） |
-| [scripts/safety-constraints.md](scripts/safety-constraints.md) | 修复安全约束与核心原则（12 条红线） |
+| [scripts/check-rules.md](scripts/check-rules.md) | S4 检查规则清单（5 项详细检查方法与判定标准 + 精确工具调用模式） |
+| [scripts/refactor-rules.md](scripts/refactor-rules.md) | S4 修复规范（统一迁移公式 + 9 步标准流程 + IMPORT-TRACKING-MAP + 批处理完整性规则） |
+| [scripts/safety-constraints.md](scripts/safety-constraints.md) | 修复安全约束与核心原则（18 条红线 + 6 条一致性约束） |
