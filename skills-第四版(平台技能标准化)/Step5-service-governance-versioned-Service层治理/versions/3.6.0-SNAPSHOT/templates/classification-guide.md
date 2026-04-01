@@ -21,14 +21,19 @@ Service 目录下的 Java 文件
 
 ## 详细分类标准
 
-### Service 接口判定
+### Service 接口判定（强制）
 
 | 条件 | 判定 | 目标目录 |
 |------|------|---------|
-| `interface` + 类名以 `Service` 结尾 | Service 接口 | `service/facade/` |
+| `interface` + 类名以 `Service` 结尾（无论是否有I前缀） | Service 接口 | `service/facade/` |
 | `interface` + 类名以 `I` 开头 + `Service` 结尾 | Service 接口 | `service/facade/` |
 | `interface` + `@FeignClient` 注解 | Feign 客户端 | 保留原位 |
 | `interface` + 其他用途 | 非 Service | 保留原位 |
+
+**强制规则**：
+- 所有业务子目录（如 `config/*/service/`、`view/*/service/`）下的Service接口**必须迁移**到 `service/facade/`
+- 不判断"是否需要迁移"，只判断"是否符合Service接口定义"
+- 类名以 `Service` 结尾即判定为Service接口，无需考虑是否有 `I` 前缀
 
 ### Service 实现判定
 

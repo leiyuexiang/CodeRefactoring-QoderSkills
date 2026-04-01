@@ -191,6 +191,10 @@
 
 ## 修复规范六：Model 层 dto/vo/query/po 分类
 
+**【重要】本规范为强制执行步骤，不可跳过**
+
+此规范确保 `model/` 根目录无散落文件，是保证多次执行一致性的关键步骤。
+
 ### 修复策略
 
 在 `model/` 下创建 `dto/`、`vo/`、`query/`、`po/` 子目录，将 `model/` 根目录散落文件按类名后缀归档。
@@ -269,3 +273,220 @@
 **此判定在 Phase 1 扫描阶段一次性确定，修复过程中保持不变。**
 
 > 文件迁移标准流程详见 → [examples/migration-flow.md](../examples/migration-flow.md)
+
+---
+
+## 【新增】修复规范七：执行后校验
+
+### 强制校验机制
+
+修复完成后，必须执行以下 6 个校验检查点：
+
+| 校验点 | 检查内容 | 预期结果 | 检查方法 |
+|--------|---------|---------|---------|
+| V1 | `model/` 根目录散落文件数 | = 0 | `Glob("model/*.java")` 应返回空 |
+| V2 | DTO 文件归档正确 | 所有 `*DTO.java` 在 `model/dto/` | `Grep("**/*DTO.java")` 检查路径 |
+| V3 | VO/BO 文件归档正确 | 所有 `*VO.java`/`*BO.java` 在 `model/vo/` | `Grep("**/*VO.java")` + `Grep("**/*BO.java")` |
+| V4 | PO 文件归档正确 | 所有 `*PO.java`/`*Po.java` 在 `model/po/` | `Grep("**/*PO.java")` + `Grep("**/*Po.java")` |
+| V5 | 无后缀文件已归档 | `model/` 根目录无 `.java` 文件 | `Glob("model/*.java")` |
+| V6 | DAO 层归位正确 | `dao/` 根目录仅有接口文件 | 按分类规则表检查 |
+
+### 校验失败处理
+
+若任一校验失败：
+1. 输出异常文件清单
+2. 标注异常原因（未归档/分类错误/路径错误）
+3. 提示重新执行对应修复步骤
+
+### 一致性保证声明
+
+完成所有校验后输出：
+```
+═══════════════════════════════════════
+  一致性保证声明
+═══════════════════════════════════════
+本模块已完成 Step4 全部治理流程：
+✓ 所有修复步骤已执行
+✓ 所有校验检查已通过
+✓ model/ 根目录散落文件 = 0
+
+【一致性保证】
+相同初始状态 → 相同修复流程 → 相同结果
+多次执行该技能，生成内容将保持一致
+═══════════════════════════════════════
+```
+
+---
+
+## 【新增】修复规范八：import 语句规范化
+
+**【重要】本规范确保多次执行的 import 语句格式一致，是达到 100% 一致率的关键步骤。**
+
+### 规则一：禁止通配符导入
+
+当文件迁移或包路径变更导致 import 需要更新时，**必须使用具体类名导入，禁止使用通配符 `.*`**。
+
+#### 操作步骤
+
+1. 扫描所有被修改的 Java 文件，检查是否存在通配符 import（如 `import grp.frame.model.*;`）
+2. 分析文件中实际使用了哪些类，将通配符展开为具体类名
+3. 按下方的"import 排序规范"重新排列 import 语句
+4. 删除未使用的 import
+
+#### 示例
+
+**禁止（通配符导入）**：
+```java
+import grp.frame.model.*;
+import grp.frame.model.vo.*;
+```
+
+**必须（具体类名导入）**：
+```java
+import grp.frame.model.po.Menu;
+import grp.frame.model.po.Module;
+import grp.frame.model.vo.RightModelDetailVo;
+import grp.frame.model.vo.RightModelVo;
+```
+
+### 规则二：import 排序规范
+
+所有 import 语句必须按以下顺序排列（组内按字母排序）：
+
+| 顺序 | 包类型 | 示例 |
+|------|--------|------|
+| 1 | `java.*` 标准库 | `import java.util.List;` |
+| 2 | `javax.*` 扩展库 | `import javax.annotation.Resource;` |
+| 3 | 第三方库（按字母排序） | `import org.springframework.beans.factory.annotation.Autowired;` |
+| 4 | 本项目包（按字母排序） | `import grp.frame.model.po.Menu;` |
+
+**空行规则**：每组之间空一行，组内不空行。
+
+#### 排序示例
+
+```java
+package grp.pt.frame.config.menu.service.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import grp.frame.model.po.Menu;
+import grp.frame.model.po.Module;
+import grp.pt.frame.config.menu.dao.MenuDao;
+import grp.pt.frame.config.menu.service.IMenuService;
+```
+
+### 规则三：相同包下多个类的合并
+
+当引用同一包下的多个类时，**每个类单独一行**，不合并。
+
+**正确**：
+```java
+import grp.frame.model.po.Menu;
+import grp.frame.model.po.Module;
+import grp.frame.model.po.Parameter;
+```
+
+**错误**：
+```java
+import grp.frame.model.po.Menu;
+import grp.frame.model.po.*;  // 禁止混用
+```
+
+### 注意事项
+
+- import 规范化在所有文件迁移完成后统一执行
+- 使用 IDE 的 "Organize Imports" 功能可自动完成排序
+- 确保删除所有未使用的 import 语句
+- 静态导入（`import static`）放在普通 import 之后，单独一组
+
+---
+
+## 【新增】修复规范九：全限定名规范化
+
+**【重要】本规范确保代码中类引用方式一致，避免因全限定名使用不当导致的不一致。**
+
+### 规则一：优先使用 import 而非全限定名
+
+当代码中需要引用其他包的类时，**优先通过 import 导入后使用简单类名**，禁止在代码中直接使用全限定名。
+
+#### 操作步骤
+
+1. 扫描所有被修改的 Java 文件，检查方法体内是否存在全限定名引用（如 `grp.frame.model.Menu`）
+2. 将全限定名改为简单类名
+3. 在文件头部添加对应的 import 语句
+4. 按"修复规范八"的排序规则整理 import
+
+#### 示例
+
+**禁止（全限定名引用）**：
+```java
+public void doSomething() {
+    grp.frame.model.Menu menu = menuDAO.selectMenuById(id);
+    // 或
+    grp.frame.model.po.Menu fMenu = menuDAO.selectMenuById(Menu.getParentId());
+}
+```
+
+**必须（import + 简单类名）**：
+```java
+// 文件头部添加 import
+import grp.frame.model.po.Menu;
+
+public void doSomething() {
+    Menu menu = menuDAO.selectMenuById(id);
+    Menu fMenu = menuDAO.selectMenuById(menu.getParentId());
+}
+```
+
+### 规则二：全限定名的例外场景
+
+以下场景**允许使用全限定名**：
+
+| 场景 | 说明 | 示例 |
+|------|------|------|
+| 类名冲突 | 同一文件中引用了两个同名但不同包的类 | `java.util.Date` 和 `java.sql.Date` 同时使用 |
+| 注解属性 | 注解的 value 属性指向类对象 | `@SuppressWarnings("unchecked")` 除外 |
+| 反射调用 | Class.forName() 等反射场景 | `Class.forName("grp.frame.model.po.Menu")` |
+| JavaDoc | 文档注释中的类引用 | `{@link grp.frame.model.po.Menu}` |
+
+### 规则三：注释中的包名规范
+
+文件头部的注释（如 `@BelongsPackage`、`PackageName` 等）应使用**完整的包路径**，与 package 声明保持一致。
+
+#### 示例
+
+**正确**：
+```java
+/**
+ * @Description 菜单服务实现
+ * @BelongsPackage grp.pt.frame.config.menu.service.impl
+ */
+package grp.pt.frame.config.menu.service.impl;
+
+// 或
+/**
+ * PackageName:grp.pt.frame.config.menu.service.impl
+ */
+package grp.pt.frame.config.menu.service.impl;
+```
+
+**错误**：
+```java
+/**
+ * PackageName:grp.frame.model  // 错误：与实际 package 不一致
+ */
+package grp.pt.frame.config.menu.service.impl;
+```
+
+### 注意事项
+
+- 全限定名规范化在 import 规范化之前执行
+- 注意区分"必须使用全限定名"和"禁止使用全限定名"的场景
+- 修改后需验证代码编译通过
+- 不改变任何业务逻辑，仅调整类引用方式

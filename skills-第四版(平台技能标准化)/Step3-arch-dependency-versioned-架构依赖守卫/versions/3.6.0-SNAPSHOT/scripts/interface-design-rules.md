@@ -52,6 +52,66 @@
 
 ---
 
+## 规则 D-01-B：方法排列顺序确定性规则（强制）
+
+新建 DelegateService 接口和实现类中的方法排列顺序**必须**按以下确定性规则确定，不允许自由排列，确保多次执行结果一致：
+
+### S1-02（新建 DelegateService）方法排列规则
+
+```
+排列优先级（从高到低，不可改变）：
+
+1. 按 Controller 中首次调用的行号从小到大排列
+   — 即 Controller 源文件中，最先出现 daoField.method() 调用的方法排在前面
+   — 对每个方法，取其在 Controller 源文件中的最小行号作为排序依据
+
+2. 如合并多个 DAO 的方法（D-04-A 强制合并场景）：
+   a. 先按 DAO 字段在 Controller 中的声明行号从小到大分组
+   b. 组内按步骤1排列（Controller 中首次调用行号升序）
+
+3. 如果同一方法在 Controller 中有多处调用，取最小行号
+```
+
+### S1-03（提取已有接口或新建接口）方法排列规则
+
+```
+1. 复用已有接口追加方法时（D-07）：
+   — 追加的方法放在接口文件的最后一个已有方法声明之后
+   — 追加方法之间的排列：按 ServiceImpl 中的声明行号从小到大排列
+
+2. 新建接口时：
+   — 按 ServiceImpl 中方法的声明行号从小到大排列
+```
+
+### 实现类方法排列规则
+
+实现类（Impl）的方法排列顺序**必须**与接口中的方法声明顺序完全一致。
+
+### 端到端示例
+
+```
+输入条件：
+  Controller 源文件中：
+    第 50 行: userDao.insertUser(userPo)
+    第 80 行: baseDAO.execute(sql, params)
+    第 120 行: userDao.queryForOne(sql, params)
+    第 150 行: baseDAO.queryForOne(sql, params)
+    第 200 行: userDao.updateUser(userPo)
+
+  注入字段声明：
+    第 30 行: @Autowired UserDao userDao
+    第 35 行: @Autowired BaseDAO baseDAO
+
+排列结果（接口方法顺序）：
+  1. insertUser(UserPo userPo)        — UserDao组，Controller首次调用行50
+  2. queryForOne(String, Object[])    — UserDao组，Controller首次调用行120（已加前缀则为 userDaoQueryForOne）
+  3. updateUser(UserPo userPo)        — UserDao组，Controller首次调用行200
+  4. execute(String, Object[])        — BaseDAO组，Controller首次调用行80
+  5. baseDaoQueryForOne(String, Object[]) — BaseDAO组，Controller首次调用行150（加前缀因与UserDao冲突）
+```
+
+---
+
 ## 规则 D-02：禁止 SQL 逻辑移动
 
 Controller 中的 SQL 拼接逻辑**必须保留在原位**（Controller 中），不得移入 Service 层。

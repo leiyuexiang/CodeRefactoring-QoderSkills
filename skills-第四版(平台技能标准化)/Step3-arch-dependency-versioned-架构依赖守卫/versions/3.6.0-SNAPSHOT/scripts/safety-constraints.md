@@ -51,6 +51,8 @@
 |---------|---------|---------|
 | C-01~C-04 | 核心原则 | safety-constraints.md（本文件）|
 | S-01~S-17 | 安全约束红线 | safety-constraints.md（本文件）|
-| D-01~D-11 | 接口设计确定性规范 | interface-design-rules.md |
-| V-01~V-06 | 完整性校验清单 | completeness-check.md |
-| FCC | 强制原样复制指令 | refactor-rules.md |
+| C-ID-1~C-ID-3 | Controller 类判定标准 | check-rules.md |
+| D-01~D-01-B | 方法签名一致 + 方法排列顺序 | interface-design-rules.md |
+| D-02~D-11 | 接口设计确定性规范 | interface-design-rules.md |
+| V-01~V-07 | 完整性校验清单 | completeness-check.md |
+| FCC | 强制原样复制指令 + FCC 执行后校验清单 | refactor-rules.md |

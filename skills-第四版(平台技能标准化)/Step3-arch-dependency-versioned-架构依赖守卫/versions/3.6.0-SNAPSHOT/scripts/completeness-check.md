@@ -69,11 +69,12 @@ Grep path: {controller-module-path}
 **操作**：
 
 ```bash
-# 标准编译命令（Windows PowerShell）
+# 标准编译命令（直接通过 Bash 工具执行，不使用 PowerShell 管线）
 cd {capability-framework-path}
-mvn compile -pl framework-controller -am 2>&1 | Out-File -FilePath ".\compile_result.txt" -Encoding utf8
-Get-Content ".\compile_result.txt" | Select-String "ERROR|BUILD SUCCESS"
+mvn compile -pl framework-controller -am
 ```
+
+**说明**：Qoder 的 Bash 工具会自动捕获命令输出。直接在输出中查找 `BUILD SUCCESS` 或 `ERROR` 关键词判断结果。禁止使用 PowerShell 的 `Out-File`/`Get-Content`/`Select-String`（可能导致中文编码损坏）。详见 [shared/encoding-guard.md](../../../../shared/encoding-guard.md) 规则二和规则四。
 
 **通过标准**：输出中包含 `BUILD SUCCESS`，且不含 `ERROR` 行
 
@@ -116,11 +117,36 @@ Grep path: {module-root-path}
 
 ---
 
+## 校验 V-07：文件结构完整性（花括号配对）
+
+**操作**：对每个在本次修复中修改过的 Java 文件，检查花括号 `{` 和 `}` 的配对完整性。
+
+执行步骤：
+1. 对每个修改过的文件，统计文件中所有 `{` 和 `}` 的数量（排除字符串字面量和注释中的花括号）
+2. 确认 `{` 数量 == `}` 数量
+3. 确认文件的最后一个非空行为类定义的闭合 `}`（对于顶级类文件）
+4. 特别检查文件末尾是否出现多余的 `}` 花括号
+
+**通过标准**：
+- 每个文件的 `{` 与 `}` 数量相等
+- 文件末尾不存在多余的闭合花括号
+- 文件末尾结构为：`最后一个方法的 }` → `类定义的 }`（中间可有空行）
+
+**常见问题**：
+- 修复过程中 Edit 操作时意外在文件末尾追加了多余的 `}`
+- 删除方法或字段时遗漏了对应的 `}`
+- 多次 Edit 操作导致花括号层级错乱
+
+**若不通过**：立即修复多余或缺失的花括号，确保文件结构完整后重新校验。
+
+---
+
 ## 校验执行时机
 
 | 时机 | 执行校验项 | 说明 |
 |------|-----------|------|
 | 每完成 3~5 个 FAIL 项修复 | **V-03 + V-04**（强制） | 接口方法完整性 + 编译验证，不得跳过 |
 | 每完成一个 S1-03 批次 | V-01、V-02（快速检查） | 确认无 ServiceImpl 和 DAO 残留 |
-| 全部 FAIL 项修复完毕 | V-01 ~ V-06（完整校验） | 最终完整验证 |
+| 全部 FAIL 项修复完毕 | V-01 ~ V-07（完整校验） | 最终完整验证 |
 | 编译错误修复后 | V-01、V-02（回归检查） | 确认修复未引入新违规 |
+| 每个文件修改完成后 | V-07（即时检查） | 确认文件结构未被破坏 |

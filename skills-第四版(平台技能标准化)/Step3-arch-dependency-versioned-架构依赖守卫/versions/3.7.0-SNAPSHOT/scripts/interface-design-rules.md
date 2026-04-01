@@ -13,6 +13,7 @@
 | 规则编号 | 规则名称 | 核心要点 |
 |---------|---------|---------|
 | D-01 | 方法签名一致 | 方法名、参数、返回类型、throws 完全一致 + 多DAO同名方法冲突时强制加前缀 |
+| D-01-B | 方法排列顺序确定性 | S1-02按Controller调用行号排列，S1-03按Impl声明行号排列，Impl与接口顺序一致 |
 | D-02 | 禁止 SQL 逻辑移动 | SQL 留在 Controller，Service 纯转发 |
 | D-03 | 禁止方法合并/拆分/迁移 | 一个 DAO 方法对应一个 Service 接口方法 |
 | D-04 | 接口命名规范 | XxxDao→IXxxDelegateService, XxxServiceImpl→IXxxService |

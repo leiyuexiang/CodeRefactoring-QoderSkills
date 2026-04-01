@@ -35,6 +35,17 @@
 2. `*.yml` / `*.yaml` / `*.properties`
 3. `*.java` 的 `import` 语句和 `package` 声明
 
+## 编码防护规范（强制前置）
+
+在执行任何检查或修复操作之前，必须读取并遵守全局编码防护规范：
+→ [shared/encoding-guard.md](../../../shared/encoding-guard.md)
+
+该规范定义了 Windows 环境下防止中文编码被 PowerShell 破坏的事前防护措施。核心要求：
+- 文件搜索使用 Grep/Glob 工具，禁止 Bash `grep`/`find`
+- 文件读取使用 Read 工具，禁止 Bash `cat`/`type`/`Get-Content`
+- 文件修改使用 Edit 工具，禁止 Bash `sed`/`awk`/PowerShell 替换
+- 仅 A 类操作（copy/mv/mkdir/rmdir）允许通过 Bash 执行
+
 ---
 
 ## 重构执行流程
