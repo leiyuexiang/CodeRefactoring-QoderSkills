@@ -175,6 +175,6 @@ Service 接口/实现模板 → [templates/](templates/) 目录
 |------|------|
 | [scripts/check-rules.md](scripts/check-rules.md) | S1 检查规则清单（5 项详细检查方法与判定标准） |
 | [scripts/refactor-rules.md](scripts/refactor-rules.md) | S1 修复规范（4 大修复策略 + AI 标记规范 + 接口设计引用） |
-| [scripts/safety-constraints.md](scripts/safety-constraints.md) | 修复安全约束与核心原则（S-01 ~ S-10） |
-| [scripts/interface-design-rules.md](scripts/interface-design-rules.md) | 接口设计规范（直接代理原则，D-01 ~ D-07） |
+| [scripts/safety-constraints.md](scripts/safety-constraints.md) | 修复安全约束与核心原则（S-01 ~ S-17） |
+| [scripts/interface-design-rules.md](scripts/interface-design-rules.md) | 接口设计规范（直接代理原则，D-01 ~ D-11） |
 | [scripts/completeness-check.md](scripts/completeness-check.md) | 完整性校验清单（V-01 ~ V-06，确保修复无遗漏） |

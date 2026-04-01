@@ -21,10 +21,13 @@
 ├── model/                         # Model 层 ← S2 重点
 │   ├── dto/                       # 数据传输对象
 │   │   └── XxxDTO.java
-│   ├── vo/                        # 视图对象
-│   │   └── XxxVO.java
-│   └── query/                     # 查询条件对象
-│       └── XxxQuery.java
+│   ├── vo/                        # 视图对象（含 VO/Vo/BO/Bo 后缀）
+│   │   ├── XxxVO.java
+│   │   └── XxxBO.java
+│   ├── query/                     # 查询条件对象
+│   │   └── XxxQuery.java
+│   └── po/                        # 持久化/无后缀兜底对象
+│       └── XxxPO.java
 ├── constant/                      # 常量定义（可选）
 └── enums/                         # 枚举定义（可选）
 ```
@@ -56,26 +59,56 @@ dao/
     └── XxxEntity.java
 ```
 
+### DAO 层文件分类规则（确定性，仅基于文件名）
+
+| 优先级 | 条件 | 分类 | 位置 |
+|--------|------|------|------|
+| 1 | 已在 dao/impl/ 下 | 实现类 | 保持原位 |
+| 2 | 已在 dao/mapper/ 下 | Mapper接口 | 保持原位 |
+| 3 | 已在 dao/entity/ 下 | 实体类 | 保持原位 |
+| 4 | 文件名以 `Impl.java` 结尾 | 实现类 | → dao/impl/ |
+| 5 | 文件名以 `Mapper.java` 结尾 | Mapper接口 | 保持或 → dao/mapper/ |
+| 6 | 文件名以 `Entity.java` 结尾 | 实体类 | → dao/entity/ |
+| 7 | 文件名以 `I` 开头且第2字符为大写 | DAO接口 | 保持在 dao/ 根目录 |
+| 8 | **兜底** | 实现类（推定） | → dao/impl/ |
+
 ## Model 层标准结构
 
 ```
 model/
 ├── dto/                           # 数据传输对象
-│   └── XxxDTO.java                # 类名以 DTO 结尾，用于服务间数据传递
+│   └── XxxDTO.java                # 类名以 DTO/Dto 结尾
 ├── vo/                            # 视图对象
-│   └── XxxVO.java                 # 类名以 VO 结尾，用于 Controller 返回
-└── query/                         # 查询条件对象
-    └── XxxQuery.java              # 类名以 Query/Param 结尾，用于查询条件封装
+│   ├── XxxVO.java                 # 类名以 VO/Vo 结尾
+│   └── XxxBO.java                 # 类名以 BO/Bo 结尾
+├── query/                         # 查询条件对象
+│   └── XxxQuery.java              # 类名以 Query/Param/QO/Qo 结尾
+└── po/                            # 持久化/无后缀兜底对象
+    └── XxxPO.java                 # 类名以 PO/Po 结尾，或无法匹配其他后缀的兜底
 ```
 
-### Model 分类判定标准
+### Model 分类判定标准（确定性优先级匹配链）
 
-| 类型 | 目标目录 | 判定依据 |
-|------|---------|---------|
-| DTO | `model/dto/` | 类名含 DTO 后缀，或用于服务间数据传递 |
-| VO | `model/vo/` | 类名含 VO 后缀，或用于 Controller 返回 |
-| Query | `model/query/` | 类名含 Query/Param 后缀，或用于查询条件封装 |
-| Entity | `dao/entity/` | 类名含 Entity 后缀，或映射数据库表（不应放在 model/ 下） |
+> **确定性原则**：分类完全依据类名后缀进行机械匹配，禁止通过阅读文件内容、分析类的用途来决定分类。按优先级从高到低逐级匹配，首次命中即确定归属。
+
+**后缀匹配算法精确定义**：
+
+"类名以 X 结尾"的含义：去除文件扩展名 `.java` 后，剩余的类名字符串的**最后 N 个字符**完全等于 X（**区分大小写**），其中 N 等于 X 的字符长度。每个优先级的多个后缀按指定顺序逐一检查，首次匹配即停止。
+
+| 优先级 | 后缀（按检查顺序） | 目标目录 | 示例 |
+|--------|----------|---------|------|
+| 1 | `DTO` → `Dto` | `model/dto/` | UserDTO.java → model/dto/、SysLogInfoDto.java → model/dto/ |
+| 2 | `VO` → `Vo` → `BO` → `Bo` | `model/vo/` | UserVO.java → model/vo/、ElementBo.java → model/vo/、UiViewBO.java → model/vo/ |
+| 3 | `Query` → `Param` → `QO` → `Qo` | `model/query/`（QO/Qo 按 HAS_QO_DIR 判定） | UserQuery.java → model/query/、ServerQueryParam.java → model/query/ |
+| 4 | `Entity` | `dao/entity/` | UserEntity.java → dao/entity/ |
+| 5 | `PO` → `Po` | `model/po/` | UserPO.java → model/po/ |
+| 6 | **兜底**：以上均不匹配 | `model/po/` | Module.java → model/po/、SysConfig.java → model/po/ |
+
+### 禁止行为
+
+- **禁止**通过阅读文件内容来判断分类
+- **禁止**通过分析类的用途、继承关系来判断分类
+- **禁止**将无后缀文件留在 `model/` 根目录
 
 ## 公共模块标准目录结构
 
@@ -107,5 +140,6 @@ dao/
 model/
 ├── dto/          (如缺失则创建)
 ├── vo/           (如缺失则创建)
-└── query/        (如缺失则创建)
+├── query/        (如缺失则创建)
+└── po/           (如缺失则创建)
 ```

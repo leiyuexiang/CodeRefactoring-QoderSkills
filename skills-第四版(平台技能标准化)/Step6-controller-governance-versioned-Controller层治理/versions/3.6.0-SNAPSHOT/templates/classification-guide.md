@@ -32,15 +32,84 @@
 | GC-EXCL-05 | 文件无任何 Spring 注解（类声明前无 `@RestController`、`@Controller`、`@Service` 等） | 普通 Java 类，不是 Spring Bean | `BpmController.java`（无任何注解） |
 | GC-EXCL-06 | 文件内容全部被注释（整个类代码被 `//` 或 `/* */` 注释） | 备份文件或已废弃文件 | `UserControllerTrmp.java`（全文注释） |
 
+### 门控检查精确正则模式（GATE-REGEX）
+
+> **以下正则表达式为门控检查的唯一判定标准，AI 必须使用这些精确正则执行 Grep，不得自行构造替代正则。**
+
+| 编号 | 用途 | Grep 正则模式 | 说明 |
+|------|------|-------------|------|
+| GATE-REGEX-01 | 检测有效 @RestController | `^\s*@RestController` | 行首可有空白，但不能有 `//` 或 `*` |
+| GATE-REGEX-02 | 检测有效 @Controller | `^\s*@Controller\b` | `\b` 防止误匹配 @ControllerAdvice 等 |
+| GATE-REGEX-03 | 检测被注释的注解 | `^\s*//.*@(Rest)?Controller` | 行首 `//` 注释内含注解 |
+| GATE-REGEX-04 | 检测块注释内的注解 | `^\s*\*.*@(Rest)?Controller` | `/* */` 块注释内含注解 |
+| GATE-REGEX-05 | 检测 @FeignClient | `^\s*@FeignClient` | 排除 Feign 客户端 |
+| GATE-REGEX-06 | 检测 @Service | `^\s*@Service\b` | 识别仅有 @Service 的文件 |
+| GATE-REGEX-07 | 检测 @Component | `^\s*@Component\b` | 识别仅有 @Component 的文件 |
+| GATE-REGEX-08 | 检测 @Repository | `^\s*@Repository\b` | 识别仅有 @Repository 的文件 |
+| GATE-REGEX-09 | 检测 package 路径含 rpc/feignclient | `package\s+.*\.(rpc|feignclient)\.` | 排除 RPC/Feign 包路径 |
+
+### 门控检查可执行伪代码（GATE-ALGORITHM）
+
+> **以下伪代码为门控检查的唯一执行流程，AI 必须严格按此顺序执行，不得跳步或重排。**
+
+```
+FUNCTION gateCheck(filePath):
+    content = Read(filePath)
+    
+    // Step G1: 提取 package 声明
+    packageLine = content 中匹配 "^package\s+(.*);$" 的行
+    packagePath = packageLine 中提取的包路径
+    
+    // Step G2: 排除 RPC/Feign 包路径（GC-EXCL-02）
+    IF packagePath 包含 ".rpc." 或 ".feignclient."
+        RETURN { result: "EXCLUDE", reason: "GC-EXCL-02: package含rpc/feignclient" }
+    
+    // Step G3: 检查 @FeignClient（GC-EXCL-01，最高优先级排除）
+    feignMatches = Grep(filePath, GATE-REGEX-05)
+    IF feignMatches 非空
+        RETURN { result: "EXCLUDE", reason: "GC-EXCL-01: 含@FeignClient" }
+    
+    // Step G4: 检查有效的 @RestController（非注释行）
+    restControllerMatches = Grep(filePath, GATE-REGEX-01)
+    commentedRestMatches = Grep(filePath, GATE-REGEX-03) + Grep(filePath, GATE-REGEX-04)
+    hasValidRestController = (restControllerMatches 非空) AND 
+                             (restControllerMatches 中存在至少一行不在 commentedRestMatches 中)
+    
+    // Step G5: 检查有效的 @Controller（非注释行）
+    controllerMatches = Grep(filePath, GATE-REGEX-02)
+    commentedControllerMatches = Grep(filePath, GATE-REGEX-03) + Grep(filePath, GATE-REGEX-04)
+    hasValidController = (controllerMatches 非空) AND 
+                         (controllerMatches 中存在至少一行不在 commentedControllerMatches 中)
+    
+    // Step G6: 判定结果
+    IF hasValidRestController
+        annotationLine = restControllerMatches 中第一个非注释行的行号
+        RETURN { result: "ADMIT", annotation: "@RestController", line: annotationLine }
+    ELSE IF hasValidController
+        annotationLine = controllerMatches 中第一个非注释行的行号
+        RETURN { result: "ADMIT", annotation: "@Controller", line: annotationLine }
+    ELSE
+        // Step G7: 记录排除原因
+        IF commentedRestMatches 非空 OR commentedControllerMatches 非空
+            RETURN { result: "EXCLUDE", reason: "GC-EXCL-03: 注解被注释" }
+        serviceMatches = Grep(filePath, GATE-REGEX-06)
+        componentMatches = Grep(filePath, GATE-REGEX-07)
+        repositoryMatches = Grep(filePath, GATE-REGEX-08)
+        IF serviceMatches 非空 OR componentMatches 非空 OR repositoryMatches 非空
+            RETURN { result: "EXCLUDE", reason: "GC-EXCL-04: 仅有@Service/@Component/@Repository" }
+        RETURN { result: "EXCLUDE", reason: "GC-EXCL-05: 无任何Spring注解" }
+```
+
 ### 门控检查执行约束
 
 **注意**：
 - 门控检查通过 Grep 搜索注解来判断，**不依赖类名模式**
 - **文件名包含 "Controller" 不等于它是 Controller**：判定标准唯一且仅为是否存在未被注释的 `@RestController` 或 `@Controller` 注解
 - **被注释掉的注解（如 `//@RestController`、`// @Controller`）不算有效注解，视同不含注解，跳过该文件**
-- Grep 时需排除以 `//` 开头（行级注释）的匹配行
+- Grep 时必须使用 GATE-REGEX 表中的精确正则，不得自行简化或替代
 - **仅有 `@Service`、`@Component`、`@Repository` 的文件不是 Controller**：即使它们的文件名以 "Controller" 结尾，也必须排除
 - 每个通过门控的文件必须记录有效注解的行号（如 "L30: @RestController"），每个被排除的文件必须记录排除原因
+- **AI 必须对每个候选文件执行完整的 GATE-ALGORITHM 伪代码，不得基于文件名、目录位置或上下文推断跳过任何步骤**
 
 ---
 
@@ -245,3 +314,167 @@ Level 3: 默认归入 custom（最低优先级）
 | 原始 package 已是 `xxx.controller.custom.yyy` 格式 | 仍按公式重算，结果与当前一致则标记 SKIP | `grp.pt.frame.controller.custom.user` → 无需迁移 |
 
 ¹ 注意：情况 B 中 modulePrefix 会包含原始 controller 段之前的所有段，可能与情况 A 的 modulePrefix 不同。需确认目标路径是否与工程整体 modulePrefix 一致。
+
+---
+
+## 完整分类管线可执行伪代码（CLASSIFICATION-PIPELINE）
+
+> **以下伪代码为完整分类管线的唯一执行流程。AI 必须对每个通过门控检查的 Controller 文件严格按此算法执行，不得跳步、合并或简化。相同输入必须产出相同输出。**
+
+```
+FUNCTION classifyController(filePath, className, originalPackage):
+    // ========================================
+    // Phase A: Level 1 精确类名映射
+    // ========================================
+    IF className IN EXACT_CLASS_MAP
+        entry = EXACT_CLASS_MAP[className]
+        RETURN {
+            level: "L1",
+            rule: "L1: 精确映射 " + className + " → " + entry.subdirectory,
+            category: entry.category,
+            subdirectory: entry.subdirectory
+        }
+    
+    // ========================================
+    // Phase B: Level 2 关键词→common 映射（按优先级顺序逐条匹配）
+    // ========================================
+    classNameLower = toLowerCase(className)
+    
+    // L2-P1: 类名包含 Sso（大小写不敏感）
+    IF classNameLower CONTAINS "sso"
+        RETURN { level: "L2", rule: "L2-P1: className含Sso→sso", category: "common", subdirectory: "sso" }
+    
+    // L2-P2: 包路径包含 ssoplatform（大小写不敏感）
+    IF toLowerCase(originalPackage) CONTAINS "ssoplatform"
+        RETURN { level: "L2", rule: "L2-P2: package含ssoplatform→sso", category: "common", subdirectory: "sso" }
+    
+    // L2-P3: 类名包含 ServerInfo（大小写不敏感）
+    IF classNameLower CONTAINS "serverinfo"
+        RETURN { level: "L2", rule: "L2-P3: className含ServerInfo→monitor", category: "common", subdirectory: "monitor" }
+    
+    // L2-P4: 类名包含 OracleServer（大小写不敏感）
+    IF classNameLower CONTAINS "oracleserver"
+        RETURN { level: "L2", rule: "L2-P4: className含OracleServer→monitor", category: "common", subdirectory: "monitor" }
+    
+    // L2-P5: 包路径包含 monitoringcenter（大小写不敏感）
+    IF toLowerCase(originalPackage) CONTAINS "monitoringcenter"
+        RETURN { level: "L2", rule: "L2-P5: package含monitoringcenter→monitor", category: "common", subdirectory: "monitor" }
+    
+    // L2-P6: 类名匹配正则 ^I[A-Z].*Controller\d*$
+    IF className MATCHES REGEX "^I[A-Z].*Controller\d*$"
+        RETURN { level: "L2", rule: "L2-P6: className匹配I*Controller→api", category: "common", subdirectory: "api" }
+    
+    // ========================================
+    // Phase C: Level 3 默认归入 custom
+    // ========================================
+    businessGroup = extractBusinessGroup(originalPackage, className)
+    RETURN {
+        level: "L3",
+        rule: "L3: 默认custom, businessGroup=" + businessGroup,
+        category: "custom",
+        subdirectory: businessGroup
+    }
+
+
+FUNCTION extractBusinessGroup(originalPackage, className):
+    segments = originalPackage.split(".")
+    
+    // 情况1: package 包含 "config" 或 "config2"
+    configIdx = -1
+    FOR i = 0 TO segments.length - 1:
+        IF segments[i] == "config" OR segments[i] == "config2"
+            configIdx = i
+            BREAK  // 取第一个匹配的 config/config2
+    
+    IF configIdx >= 0
+        IF configIdx + 1 < segments.length AND segments[configIdx + 1] != "controller"
+            // 标准情况：config 后有业务段
+            RETURN toLowerCase(segments[configIdx + 1])
+        ELSE IF configIdx + 1 < segments.length AND segments[configIdx + 1] == "controller"
+            // 边界情况：config 后直接是 controller，无业务段
+            RETURN toLowerCase(className.replace("Controller", ""))
+        ELSE
+            // config 是最后一段（极端边界）
+            RETURN toLowerCase(className.replace("Controller", ""))
+    
+    // 情况2: 不含 config/config2，但含 "controller"
+    controllerIdx = -1
+    FOR i = 0 TO segments.length - 1:
+        IF segments[i] == "controller"
+            controllerIdx = i
+            BREAK
+    
+    IF controllerIdx >= 0 AND controllerIdx > 0
+        RETURN toLowerCase(segments[controllerIdx - 1])
+    
+    // 情况3: 不含 config/config2 也不含 controller
+    RETURN toLowerCase(segments[segments.length - 1])
+
+
+FUNCTION computeTargetPackage(originalPackage, category, subdirectory):
+    segments = originalPackage.split(".")
+    
+    // 情况A: 含 config 或 config2
+    configIdx = -1
+    FOR i = 0 TO segments.length - 1:
+        IF segments[i] == "config" OR segments[i] == "config2"
+            configIdx = i
+            BREAK
+    
+    IF configIdx >= 0
+        modulePrefix = segments[0..configIdx-1].join(".")
+        RETURN modulePrefix + ".controller." + category + "." + subdirectory
+    
+    // 情况B: 不含 config/config2，含 controller
+    controllerIdx = -1
+    FOR i = 0 TO segments.length - 1:
+        IF segments[i] == "controller"
+            controllerIdx = i
+            BREAK
+    
+    IF controllerIdx >= 0
+        modulePrefix = segments[0..controllerIdx-1].join(".")
+        RETURN modulePrefix + ".controller." + category + "." + subdirectory
+    
+    // 情况C: 不含 config/config2 也不含 controller
+    modulePrefix = segments[0..segments.length-2].join(".")
+    RETURN modulePrefix + ".controller." + category + "." + subdirectory
+```
+
+### 伪代码验证用例（CLASSIFICATION-TEST-CASES）
+
+> **以下测试用例为伪代码的验证基准。AI 每次执行前可用这些用例自检，确保算法实现正确。**
+
+| # | className | originalPackage | 预期 level | 预期 category | 预期 subdirectory | 预期 targetPackage |
+|---|-----------|----------------|-----------|-------------|-----------------|------------------|
+| TC-01 | ElementController | grp.pt.frame.config.basedata.controller | L3 | custom | basedata | grp.pt.frame.controller.custom.basedata |
+| TC-02 | SsoConfigController | grp.pt.frame.config.ssoplatform | L2(P1) | common | sso | grp.pt.frame.controller.common.sso |
+| TC-03 | ServerInfoController | grp.pt.frame.config.monitoringcenter.controller | L2(P3) | common | monitor | grp.pt.frame.controller.common.monitor |
+| TC-04 | IMenuController | grp.pt.frame.config.icontroller | L2(P6) | common | api | grp.pt.frame.controller.common.api |
+| TC-05 | CacheController | grp.pt.frame.config.cachemanager.controller.common | L3 | custom | cachemanager | grp.pt.frame.controller.custom.cachemanager |
+| TC-06 | GapUiViewController | grp.pt.frame.config.gapuiview.controller | L3 | custom | gapuiview | grp.pt.frame.controller.custom.gapuiview |
+| TC-07 | ElePortalSysController | grp.pt.frame.config.eleprotalststemcontroller | L3 | custom | eleprotalststemcontroller | grp.pt.frame.controller.custom.eleprotalststemcontroller |
+| TC-08 | ViewInfoController | grp.pt.frame.view | L3 | custom | view | grp.pt.frame.controller.custom.view |
+| TC-09 | OracleServerController | grp.pt.frame.config2.dbmonitor.controller | L2(P4) | common | monitor | grp.pt.frame.controller.common.monitor |
+| TC-10 | AdminMenuController | grp.pt.frame.config2.admin.controller | L3 | custom | admin | grp.pt.frame.controller.custom.admin |
+| TC-11 | BpmFlowController | grp.pt.frame.bpm.controller.custom | L3 | custom | bpm | grp.pt.frame.bpm.controller.custom.bpm |
+| TC-12 | InstallController | grp.pt.frame.install | L3 | custom | install | grp.pt.frame.controller.custom.install |
+
+---
+
+## 常见 AI 错误目录（COMMON-MISTAKES）
+
+> **以下为多次执行中实际发生的 AI 错误。每次执行 Step6 时，AI 应在开始前阅读此列表并在执行过程中避免这些错误。**
+
+| 编号 | 错误类型 | 错误描述 | 正确做法 | 发生频率 |
+|------|---------|---------|---------|---------|
+| CM-01 | 语义归并 | 将 `gapuiview` 归入已有的 `view/` 目录 | 严格按公式输出 `gapuiview`，独立建目录 | 高 |
+| CM-02 | 拼写纠错 | 将 `eleprotalststemcontroller` 简化为 `eleportal` | 原样转小写，不做修正 | 高 |
+| CM-03 | 文件名推断 | 将 `BpmController.java` 视为 Controller 迁移（实际无注解） | 必须 Grep 验证注解，文件名不是判定标准 | 高 |
+| CM-04 | 注释注解误判 | 将 `//@RestController` 视为有效注解 | 使用 GATE-REGEX-03/04 排除注释行中的注解 | 中 |
+| CM-05 | @Service 误迁 | 迁移仅有 `@Service` 注解的 `UserLogController.java` | GATE-EXCLUDE-04：无有效 Controller 注解则不迁移 | 中 |
+| CM-06 | 交叉引用遗漏 | 迁移 A 后未更新 A 内部对已迁移 B 的 import | S-12：双向引用更新，使用 Phase 2 计划表中的映射 | 高 |
+| CM-07 | 文件内容截断 | 迁移时仅写入类签名和部分方法，省略了完整内容 | INTEGRITY-01：完整复制原文件，仅改 package 行 | 中 |
+| CM-08 | Level 2 误判 | 将 CacheController 归入 common（因为看起来像框架功能） | Level 2 匹配表是封闭列表，Cache 不在其中，应归 L3 custom | 中 |
+| CM-09 | 扫描遗漏 | 仅扫描 config/ 下有 controller/ 子包的目录，遗漏直接放在 config/{业务}/ 下的 Controller | 两种放置模式都必须覆盖 | 高 |
+| CM-10 | modulePrefix 错误 | 情况 B (不含config但含controller) 时使用了错误的 modulePrefix | 严格按伪代码 computeTargetPackage 执行 | 低 |

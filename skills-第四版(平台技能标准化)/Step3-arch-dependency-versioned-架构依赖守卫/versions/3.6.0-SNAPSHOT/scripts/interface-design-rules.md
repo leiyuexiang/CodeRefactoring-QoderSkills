@@ -442,3 +442,81 @@ public interface IXxxDelegateService {
 2. 如无法确定 Impl 中的声明顺序（如方法来自多个 Impl），按 **Controller 中的首次调用顺序**排列
 3. 同一次修复中追加的所有方法使用**同一个 AI 标记块**包裹
 4. 追加方法块的位置：放在接口文件的**最后一个方法声明之后、类结束 `}` 之前**
+
+---
+
+## 规则 D-10：Controller 业务名提取确定性算法（强制）
+
+当需要使用"Controller 业务名"命名 DelegateService 时（通用 DAO、多 DAO 合并等场景），**必须**按以下确定性算法提取，不允许自由发挥：
+
+### 提取算法
+
+```
+输入: Controller 类名（如 SynchronizeInfoController）
+输出: 业务名（如 SynchronizeInfo）
+
+步骤:
+1. 取 Controller 类的简单类名（不含包路径）
+2. 去掉末尾的 "Controller" 后缀
+3. 所得即为业务名，保持原始大小写不变
+```
+
+### 示例对照表
+
+| Controller 类名 | 去掉 Controller 后缀 | 业务名 | 接口名 |
+|---|---|---|---|
+| `SynchronizeInfoController` | `SynchronizeInfo` | `SynchronizeInfo` | `ISynchronizeInfoDelegateService` |
+| `DataCheckController` | `DataCheck` | `DataCheck` | `IDataCheckDelegateService` |
+| `AgentRightController` | `AgentRight` | `AgentRight` | `IAgentRightDelegateService` |
+| `BJCAController` | `BJCA` | `BJCA` | `IBJCADelegateService` |
+| `GXTPSController` | `GXTPS` | `GXTPS` | `IGXTPSDelegateService` |
+| `TenantController` | `Tenant` | `Tenant` | `ITenantDelegateService` |
+| `UserMgmtController` | `UserMgmt` | `UserMgmt` | `IUserMgmtDelegateService` |
+
+### 边缘 Case 处理
+
+| 边缘情况 | 处理规则 | 示例 |
+|----------|---------|------|
+| 类名不以 `Controller` 结尾 | 直接使用完整类名作为业务名 | `UserApi` → 业务名 `UserApi` |
+| 类名为 `Controller`（无业务前缀） | 使用类所在包的最后一级包名（首字母大写） | `grp.pt.config.user.Controller` → 业务名 `User` |
+| 类名包含多个 `Controller` 子串 | 仅去掉**末尾**的 `Controller` | `ControllerConfigController` → 业务名 `ControllerConfig` |
+
+---
+
+## 规则 D-11：S1-03 已有接口查找路径确定性规则（强制）
+
+修复 S1-03 时需要判断被注入的 ServiceImpl 是否已有对应 Service 接口。**必须**按以下确定性规则查找，不允许猜测：
+
+### 查找步骤（按优先级顺序，命中第一个即停止）
+
+```
+输入: ServiceImpl 类（如 UserService，包路径 grp.pt.frame.config.user.service.impl.UserService）
+
+1. 检查 ServiceImpl 类声明中的 implements 子句：
+   - 如果 ServiceImpl implements IXxxService → 该接口即为目标接口
+   - 直接读取 ServiceImpl 源码中的 class 声明行确认
+
+2. 如果 implements 子句为空或仅实现框架接口（如 Serializable）：
+   - 按命名规则推导接口名：
+     a. XxxServiceImpl → IXxxService
+     b. XxxService（不含Impl后缀的具体类） → IXxxService
+   - 在 ServiceImpl 同模块的 service 包下搜索该接口文件：
+     Grep pattern: public interface {推导的接口名}
+     Grep path: {service-module-src-path}
+
+3. 如果搜索无结果 → 判定为"无已有接口"，需要新建
+```
+
+### 查找路径确定性规则
+
+| 查找顺序 | 查找位置 | 说明 |
+|---------|---------|------|
+| 1 | ServiceImpl 的 `implements` 声明 | 最可靠，直接从代码中获取 |
+| 2 | ServiceImpl 同包的上级 `service/` 目录 | 如 `service.impl.UserService` → 查找 `service.IUserService` |
+| 3 | Service 层模块的全局搜索 | `Grep pattern: public interface I{Xxx}Service` |
+| 4 | 判定为不存在 | 需要新建接口 |
+
+**禁止行为**：
+- 禁止仅凭类名猜测接口是否存在（必须实际读取或搜索确认）
+- 禁止在 Controller 层模块中搜索接口（接口应在 Service 层模块中）
+- 禁止因为"可能存在"就跳过新建步骤

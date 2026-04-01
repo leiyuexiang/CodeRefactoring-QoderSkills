@@ -1,6 +1,6 @@
 ﻿# 修复安全约束与核心原则 - 3.7.0-SNAPSHOT
 
-> 安全约束在所有版本中保持一致。
+> **本文件为摘要版本。完整规则必须从基线版本读取：`versions/3.6.0-SNAPSHOT/scripts/safety-constraints.md`**
 
 ## 核心原则
 
@@ -11,7 +11,9 @@
 | C-03 | **逐步执行** | 按优先级逐项修复，每完成一项向用户确认 |
 | C-04 | **保持可编译** | 重构后确保 import 路径、包声明、方法签名保持正确 |
 
-## 安全约束（红线）
+## 安全约束（红线）—— 完整 S-01 ~ S-17
+
+执行修复前必须遵守以下约束，**任何一条违反都必须立即停止并报告**：
 
 | 编号 | 约束 | 说明 |
 |------|------|------|
@@ -23,11 +25,32 @@
 | S-06 | **保持方法签名** | 被迁移到 Service 层的方法，签名应尽量保持一致 |
 | S-07 | **接口签名一致性** | 新建 Service 接口的方法签名必须与 ServiceImpl 中的 public 方法完全一致（返回类型、方法名、参数列表、throws），禁止新增、合并、拆分方法 |
 | S-08 | **禁止 SQL 逻辑移动** | 不得将 DAO/Mapper 层的 SQL 调用逻辑上移到 Service 接口层，接口仅作为调用转发层 |
+| S-09 | **禁止迁移 Controller 的 private 方法** | Controller 中的 private 方法必须保留在原位，不得整体迁移到 Service 层；private 方法内部的 DAO 调用改为通过 DelegateService 接口转发 |
+| S-10 | **S1-03 接口方法范围最小化** | 为 ServiceImpl 提取接口时，仅提取 Controller 中**实际调用**的 ServiceImpl 方法，禁止提取 Controller 未调用但 ServiceImpl 中存在的方法 |
+| S-11 | **S1-03 修复范围全覆盖** | 所有匹配的 ServiceImpl 注入都必须修复，不允许选择性跳过（唯一例外：字段存在但 Controller 未调用任何方法） |
+| S-12 | **多 DAO 强制合并** | 同一 Controller 注入的多个 DAO 必须合并到同一个 DelegateService，禁止拆分为多个独立 Service |
+| S-13 | **新建文件放 Service 层模块** | DelegateService 接口和实现类必须放在 Service 层模块（`{module}-server-com`/`{module}-service`）中，禁止放在 Controller 层模块 |
+| S-14 | **字段命名确定性** | 替换注入类型后，字段名必须按接口设计规范 D-09 的确定性规则命名，禁止保留原字段名或自由命名 |
+| S-15 | **违规编号确定性** | 同一违规必须始终判定为相同的 S1 编号，按被注入类的类型特征判定，不按场景判定 |
+| S-16 | **注释格式标准化** | 新建接口的 JavaDoc 注释必须按 D-05 标准化格式生成，禁止两次执行时采用不同的注释详细程度 |
+| S-17 | **编码保留** | 修改或新建文件时必须保持与工程现有文件一致的字符编码格式。原文件为 UTF-8 with BOM（首3字节为 EF BB BF）时，修改后必须保留 BOM。优先使用 Edit 工具进行精确替换（自动保留编码），避免使用 Write 工具重写整个文件导致编码丢失或中文乱码。新建 Service 接口和实现文件时，应与同模块现有 Java 文件的编码格式保持一致 |
 
 ## 允许修改的范围
 
 - Controller 类的 `@Autowired` / `@Resource` 字段声明
 - Controller 类的 `import` 语句
-- Controller 类中的方法调用链
+- Controller 类中的方法调用链（将 Controller 调用改为 Service 调用）
 - 新建 Service 接口文件和 ServiceImpl 实现文件
-- 新建 DTO/VO/Query 类文件
+- 新建 DTO/VO/Query 类文件（Entity 泄露修复时）
+
+---
+
+## 规则交叉引用索引
+
+| 规则编号 | 规则名称 | 所在文件 |
+|---------|---------|---------|
+| C-01~C-04 | 核心原则 | safety-constraints.md（本文件）|
+| S-01~S-17 | 安全约束红线 | safety-constraints.md（本文件）|
+| D-01~D-11 | 接口设计确定性规范 | 基线版 interface-design-rules.md |
+| V-01~V-06 | 完整性校验清单 | 基线版 completeness-check.md |
+| FCC | 强制原样复制指令 | 基线版 refactor-rules.md |

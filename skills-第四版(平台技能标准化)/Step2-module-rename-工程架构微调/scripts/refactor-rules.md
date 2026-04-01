@@ -210,6 +210,17 @@ Java 文件的包路径变更后，需同步移动 `src/main/java/` 下的目录
 
 ---
 
+## 三-A、编码保留规则
+
+所有文件修改操作必须遵守编码保留约束：
+
+1. **优先 Edit 不要 Write**：修改 POM 或 Java 文件内容时，优先使用 Edit 工具进行精确字符串替换（自动保留原文件编码），避免使用 Write 工具重写整个文件（可能丢失 BOM 或改变编码）
+2. **目录移动用 Bash**：物理目录移动（如 `{module}-server/` → `{module}-controller/`）使用 Bash 的 `mv` 命令，该命令保留文件的原始编码和 BOM
+3. **BOM 检查**：如果原 Java 文件为 UTF-8 with BOM（首3字节为 EF BB BF），修改后的文件必须保留 BOM。使用 Edit 工具修改可自动保留，使用 Write 工具重写则会丢失
+4. **编码一致性**：不得在修改过程中改变文件的编码格式（如将 GBK 文件改为 UTF-8，或将 UTF-8 with BOM 改为 UTF-8 without BOM）
+
+---
+
 ## 四、配置文件更新规则
 
 ### 4.1 一般情况下无需修改

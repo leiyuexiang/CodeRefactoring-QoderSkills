@@ -2,6 +2,8 @@
 
 修复全部 FAIL 项后，**必须按以下顺序执行完整性校验**。校验不通过则修复后重新校验，直到全部通过。
 
+> ⚠️ **强制规定**：每完成一批（3~5个）FAIL 项修复后，**必须立即执行 V-03 + V-04** 编译验证，不得等到全部修复完成后才编译。历史教训：接口方法缺失若积累过多，编译错误数量会爆炸式增长，排查成本极高。
+
 ---
 
 ## 校验 V-01：Controller 层 ServiceImpl 残留搜索
@@ -40,28 +42,47 @@ Grep path: {controller-module-path}
 
 执行步骤：
 1. 对每个新建/修改的接口文件，列出所有已声明的方法名
-2. 在引用该接口的 Controller 中，Grep 搜索 `{fieldName}\.` 获取所有方法调用
+2. **Grep 搜索所有调用该接口字段的 Controller 文件**（不仅是当前修改的文件）：
+   ```
+   Grep pattern: {fieldName}\.
+   Grep path: {controller-module-src-path}
+   ```
 3. 逐一比对方法调用是否在接口方法列表中
-4. 缺失的方法 → 在 Impl 类中查找方法签名 → 在接口中追加声明
+4. 缺失的方法 → **读取 Impl 类中该方法的完整签名**（含返回类型、参数列表、throws 声明）→ 在接口中追加声明
+5. **特别注意重载方法**：同名但参数不同的方法（如 `checkUniqueLoginSn(String)` 和 `checkUniqueLoginSn(String, Integer)`）必须在接口中分别声明
 
-**通过标准**：Controller 中调用的所有方法在接口中均有声明。
+**通过标准**：Controller 中调用的所有方法在接口中均有声明（包括所有重载变体）。
+
+**常见遗漏场景**：
+- 带额外参数的重载方法（如带 `auditStatus`、`tenantId` 的重载版本）
+- 多个 Controller 引用同一接口，只检查了部分 Controller
+- ServiceImpl 实现了多个接口，Controller 调用的方法分布在不同接口中
 
 ---
 
-## 校验 V-04：编译验证
+## 校验 V-04：编译验证（每批修复后必须执行）
+
+**执行时机**：
+- **每完成 3~5 个 FAIL 项修复后立即执行**（不得延后到全部修复完再执行）
+- 全部 FAIL 项修复完毕后执行最终编译验证
 
 **操作**：
 
 ```bash
-mvn compile -pl {service-module},{controller-module} -am -T 4
+# 标准编译命令（Windows PowerShell）
+cd {capability-framework-path}
+mvn compile -pl framework-controller -am 2>&1 | Out-File -FilePath ".\compile_result.txt" -Encoding utf8
+Get-Content ".\compile_result.txt" | Select-String "ERROR|BUILD SUCCESS"
 ```
 
-**通过标准**：BUILD SUCCESS
+**通过标准**：输出中包含 `BUILD SUCCESS`，且不含 `ERROR` 行
 
-**若不通过**：
-1. 分析编译错误类型（找不到符号、语法错误等）
-2. 修复编译错误
-3. 修复后**必须重新执行 V-01 和 V-02**，确认修复过程未引入新的违规
+**若不通过，按以下步骤排查**：
+1. 查看完整错误文件，找出所有 `找不到符号` 的方法名和所在类
+2. 对每个缺失方法：在 Impl 类中搜索该方法的完整签名（`Grep pattern: public.*{方法名}`）
+3. 将方法签名追加到对应接口中（注意保持返回类型、参数类型、throws 完全一致）
+4. 修复后**必须重新执行 V-01 和 V-02**，确认修复过程未引入新的违规
+5. 再次编译验证直到 BUILD SUCCESS
 
 ---
 
@@ -97,8 +118,9 @@ Grep path: {module-root-path}
 
 ## 校验执行时机
 
-| 时机 | 执行校验项 |
-|------|-----------|
-| 每完成一个 FAIL 项修复 | V-01、V-02（快速检查） |
-| 全部 FAIL 项修复完毕 | V-01 ~ V-06（完整校验） |
-| 编译错误修复后 | V-01、V-02（回归检查） |
+| 时机 | 执行校验项 | 说明 |
+|------|-----------|------|
+| 每完成 3~5 个 FAIL 项修复 | **V-03 + V-04**（强制） | 接口方法完整性 + 编译验证，不得跳过 |
+| 每完成一个 S1-03 批次 | V-01、V-02（快速检查） | 确认无 ServiceImpl 和 DAO 残留 |
+| 全部 FAIL 项修复完毕 | V-01 ~ V-06（完整校验） | 最终完整验证 |
+| 编译错误修复后 | V-01、V-02（回归检查） | 确认修复未引入新违规 |
