@@ -244,11 +244,13 @@ Java 文件的包路径变更后，需同步移动 `src/main/java/` 下的目录
 
 | 编号 | 验证项 | 方法 |
 |------|--------|------|
-| V-01 | 目录已正确重命名 | `ls` 检查能力层目录下的模块名 |
-| V-02 | 被重命名模块的 artifactId 已更新 | 读取 POM 检查 |
-| V-03 | 能力层容器 modules 声明已更新 | 读取 POM 检查 |
-| V-04 | 根 POM dependencyManagement 已更新 | 读取 POM 检查 |
-| V-05 | 全局无旧 artifactId 残留引用 | `grep -r "{module}-server</artifactId>" --include="pom.xml"` |
+| V-01 | 目录已正确重命名 | Glob 工具检查能力层目录下的模块名 |
+| V-02 | 被重命名模块的 artifactId 已更新 | Read 工具读取 POM 检查 |
+| V-03 | 能力层容器 modules 声明已更新 | Read 工具读取 POM 检查 |
+| V-04 | 根 POM dependencyManagement 已更新 | Read 工具读取 POM 检查 |
+| V-05 | 全局无旧 artifactId 残留引用 | Grep 工具: `pattern="{module}-server</artifactId>", glob="**/pom.xml"` |
 | V-06 | Java package 声明与目录路径一致 | 遍历检查 |
-| V-07 | Java import 无旧包路径残留 | `grep -r "import.*{module}.server.com" --include="*.java"` 和 `grep -r "import.*{module}.server\." --include="*.java"` |
-| V-08 | `mvn compile` 编译通过 | 执行编译 |
+| V-07 | Java import 无旧包路径残留 | Grep 工具: `pattern="import.*{module}\.server\.com\.", glob="**/*.java"` 和 `pattern="import.*{module}\.server\.", glob="**/*.java"` |
+| V-08 | `mvn compile` 编译通过 | Bash 工具执行 `mvn compile`（直接捕获输出，不使用 PowerShell 管线） |
+
+**编码防护说明**：V-05 和 V-07 的搜索必须使用 Grep 工具（非 Bash `grep` 命令），避免 PowerShell 编码转换导致中文内容搜索不准确。详见 [shared/encoding-guard.md](../../shared/encoding-guard.md)。

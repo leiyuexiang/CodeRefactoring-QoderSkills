@@ -17,7 +17,8 @@
 ```
 判定优先级（从高到低）：
 
-1. 被注入类名以 "Controller" 结尾 + 被注入类有 @RestController/@Controller 注解
+1. 被注入类满足 Controller 类判定标准（C-ID-1/C-ID-2/C-ID-3 任一条件）：
+   类名包含 "Controller" 子串、或有 @RestController/@Controller 注解、或包路径含 .controller.
    → S1-01（Controller→Controller 依赖）
 
 2. 被注入类名以 "Dao"/"DAO"/"Mapper" 结尾 + 或有 @Repository/@Mapper 注解
@@ -41,21 +42,30 @@
 
 **违规模式**：Controller 类通过 `@Autowired` 或 `@Resource` 注入了另一个 Controller。
 
+### Controller 类判定标准（强制确定性规则）
+
+判定一个类是否为"Controller 类"时，满足**任一条件**即判定为 Controller 类：
+- **C-ID-1**：类名包含 `Controller` 子串（如 `GXTPSControllerExt`、`UserLogController`）
+- **C-ID-2**：类上标注了 `@RestController` 或 `@Controller` 注解
+- **C-ID-3**：类所在包路径包含 `.controller.`
+
+> 完整的判定标准详见基线版本 `versions/3.6.0-SNAPSHOT/scripts/check-rules.md`
+
 **强制全量扫描指令（不可跳过，必须先于单文件分析执行）**：
 
 ```
 # 扫描1：import 了 .controller. 包路径的文件
-Grep pattern: import.*\.controller\.[A-Z][a-zA-Z]*Controller
+Grep pattern: import.*\.controller\.[A-Z]
 Grep path: {controller-module-src-path}
 Grep flags: -l
 
-# 扫描2：@Autowired 注入 XxxController 的文件
-Grep pattern: @Autowired[\s\S]{0,50}[A-Z][a-zA-Z]*Controller
+# 扫描2：@Autowired 注入类名含 Controller 的文件
+Grep pattern: @Autowired[\s\S]{0,50}[A-Z][a-zA-Z]*Controller[a-zA-Z]*\b
 Grep path: {controller-module-src-path}
 Grep flags: -l
 
-# 扫描3：@Resource 注入 XxxController 的文件
-Grep pattern: @Resource[\s\S]{0,50}[A-Z][a-zA-Z]*Controller
+# 扫描3：@Resource 注入类名含 Controller 的文件
+Grep pattern: @Resource[\s\S]{0,50}[A-Z][a-zA-Z]*Controller[a-zA-Z]*\b
 Grep path: {controller-module-src-path}
 Grep flags: -l
 ```
